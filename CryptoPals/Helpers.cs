@@ -55,5 +55,18 @@ namespace CryptoPals
                 final = "0x" + final.ToUpper();
             return final;
         }
+
+        /// <summary>
+        /// X-OR two byte arrays
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static byte[] XOR(byte[] a, byte[] b) {
+            byte[] result = new byte[a.Length];
+            for (int i = 0; i < a.Length && i < b.Length; i++)
+                result[i] = (byte)(a[i] ^ b[i]);
+            return result;
+        }
     }
 }

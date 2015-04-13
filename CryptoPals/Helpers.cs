@@ -34,7 +34,6 @@ namespace CryptoPals
                 result[result.Length - 1] <<= hexString.Length % 2 * 4;
             return result;
         }
-
         /// <summary>
         /// Converts a byte array to a string with hexadecimal digits.
         /// </summary>
@@ -58,6 +57,14 @@ namespace CryptoPals
             return final;
         }
 
+        /// <summary>
+        /// Convert a normal UTF-8 string into a byte array
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static byte[] FromUTF8String(string message) {
+            return Encoding.UTF8.GetBytes(message);
+        }
         /// <summary>
         /// Converts a byte array to a normal UTF-8 string
         /// </summary>

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 
 namespace CryptoPals
 {
@@ -17,7 +16,7 @@ namespace CryptoPals
             get { return Helpers.ToHexString(this.Source); }
         }
         public string UTF8String {
-            get { return Encoding.UTF8.GetString(this.Source, 0, this.Source.Length); }
+            get { return Helpers.ToUTF8String(this.Source); }
         }
 
         // Methods

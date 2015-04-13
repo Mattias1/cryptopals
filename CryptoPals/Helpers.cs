@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace CryptoPals
 {
@@ -12,7 +13,7 @@ namespace CryptoPals
         public static byte[] FromHexString(string hexString) {
             // Initialize: work with a lowercase string without "0x" in front and without spaces
             hexString = hexString.ToLower().Replace(" ", "");
-            if (hexString[0] == '0' && hexString[1] == 'x')
+            if (hexString.Length > 1 && hexString[0] == '0' && hexString[1] == 'x')
                 hexString = hexString.Substring(2);
             byte[] result = new byte[hexString.Length / 2 + hexString.Length % 2];
 
@@ -29,24 +30,25 @@ namespace CryptoPals
                     throw new Exception("Not a hex string.");
             }
             // Make sure to shift the last byte in case of an odd string length
-            result[result.Length - 1] <<= hexString.Length % 2 * 4;
+            if (result.Length > 0)
+                result[result.Length - 1] <<= hexString.Length % 2 * 4;
             return result;
         }
 
         /// <summary>
         /// Converts a byte array to a string with hexadecimal digits.
         /// </summary>
-        /// <param name="bytes"></param>
+        /// <param name="raw"></param>
         /// <returns></returns>
-        public static string ToHexString(byte[] bytes, bool add0x = false) {
+        public static string ToHexString(byte[] raw, bool add0x = false) {
             // Initialize
-            char[] result = new char[bytes.Length * 2];
+            char[] result = new char[raw.Length * 2];
             string hex = "0123456789abcdef";
 
             // Fill the char array
-            for (int i = 0; i < bytes.Length; i++) {
-                result[i * 2] = hex[bytes[i] >> 4];
-                result[i * 2 + 1] = hex[bytes[i] & 0x0f];
+            for (int i = 0; i < raw.Length; i++) {
+                result[i * 2] = hex[raw[i] >> 4];
+                result[i * 2 + 1] = hex[raw[i] & 0x0f];
             }
 
             // Convert to string in one pass (and optionally add the "0x" in front)
@@ -54,6 +56,15 @@ namespace CryptoPals
             if (add0x)
                 final = "0x" + final.ToUpper();
             return final;
+        }
+
+        /// <summary>
+        /// Converts a byte array to a normal UTF-8 string
+        /// </summary>
+        /// <param name="raw"></param>
+        /// <returns></returns>
+        public static string ToUTF8String(byte[] raw) {
+            return Encoding.UTF8.GetString(raw, 0, raw.Length);
         }
 
         /// <summary>

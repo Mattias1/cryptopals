@@ -5,6 +5,7 @@ namespace CryptoPals
 {
     static class Helpers
     {
+        // Encodings
         /// <summary>
         /// Convert a string with hexadecimal digits [0..9, A..F]* to a byte array.
         /// </summary>
@@ -75,6 +76,28 @@ namespace CryptoPals
         }
 
         /// <summary>
+        /// Print a byte array as a normal UTF-8 string to the console
+        /// </summary>
+        /// <param name="raw"></param>
+        public static void PrintUTF8String(byte[] raw) {
+            Console.WriteLine(ToUTF8String(raw));
+        }
+
+        // Misc
+        /// <summary>
+        /// Copy a part of the raw array
+        /// </summary>
+        /// <param name="raw"></param>
+        /// <param name="start">The start index of the part of the raw array that we want to copy</param>
+        /// <param name="length">The length of the part we want to copy</param>
+        /// <returns></returns>
+        public static byte[] CopyPartOf(byte[] raw, int start, int length) {
+            byte[] result = new byte[length];
+            Array.Copy(raw, start, result, 0, length);
+            return result;
+        }
+
+        /// <summary>
         /// X-OR a message with a key (repeated if shorter than message)
         /// </summary>
         /// <param name="message">The message to XOR</param>
@@ -88,38 +111,23 @@ namespace CryptoPals
         }
 
         /// <summary>
-        /// Calculate a score as to how close it is to the 'perfect english text'.
-        /// The lower the score, the closer.
+        /// Calculate the Hamming distance between two byte arrays
+        /// The hamming distance is the number of different bits
         /// </summary>
-        /// <param name="s"></param>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
         /// <returns></returns>
-        public static double FrequencyScore(string s) {
-            // The frequencies of english text (%)
-            double[] frequencies_en = {
-                8.167, 1.492, 2.782, 4.253, 12.702, 2.228, 2.015,                   // a - g
-                6.094, 6.966, .153, .772, 4.025, 2.406, 6.749, 7.507, 1.929,        // h - p
-                .095, 5.987, 6.327, 9.056, 2.758, .978, 2.360, .150, 1.974, .074,   // q - z
-                20, 0                                                               // Space, Other characters (assume they don't occur)
-            };
+        public static int HammingDistance(byte[] a, byte[] b) {
+            // Hamming distance: the number of differing bits
+            if (a.Length != b.Length)
+                throw new Exception("Hamming distance is only valid for arrays of equal length");
 
-            // Count the occurances of every letter
-            s = s.ToLower();
-            double[] counts = new double[frequencies_en.Length];
-            for (int i = 0; i < s.Length; i++) {
-                if ('a' <= s[i] && s[i] <= 'z')
-                    counts[s[i] - 'a']++;
-                else if (s[i] == ' ')
-                    counts[26]++;
-                else
-                    counts[counts.Length - 1]++;
-            }
-
-            // Calculate a single score, by giving more penalty the further away our counted score is to the optimal frequency.
-            double normalizeFactor = 100 / s.Length;
-            double score = 0;
-            for (int i = 0; i < counts.Length; i++)
-                score += Math.Abs(frequencies_en[i] - counts[i] * normalizeFactor);
-            return score;
+            int result = 0;
+            for (int i = 0; i < a.Length; i++)
+                for (int bit = 1; bit < 256; bit <<= 1)
+                    if ((a[i] & bit) != (b[i] & bit))
+                        result++;
+            return result;
         }
     }
 }

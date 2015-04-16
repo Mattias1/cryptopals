@@ -35,8 +35,8 @@ namespace CryptoPals
             byte[] input = Convert.FromBase64String(file);
 
             // Find the keysize
-            int nrOfSamples = 3;
-            ScoreItem[] keysizeList = new ScoreItem[5];
+            int nrOfSamples = 5;
+            ScoreItem[] keysizeList = new ScoreItem[3];
             for (int keysize = 2; keysize < 40; keysize++) {
                 ScoreItem current = new ScoreItem(input);
                 current.KeyUsed = BitConverter.GetBytes(keysize);
@@ -48,12 +48,30 @@ namespace CryptoPals
                 current.Score /= nrOfSamples * keysize; // Normalize
                 current.InsertInScoreList(keysizeList);
             }
+            Console.WriteLine("Keysize and hamming distance:");
             ScoreItem.DisplayScoreList(keysizeList, false);
             Console.WriteLine();
 
-            // Todo
-            Console.WriteLine("The rest of breaking the Vigenere cipher is a todo for later...");
+            // Attack the Vigenere cipher, because we are not 100% sure on the keysize, try each of the most likely ones
+            for (int i = 0; i < keysizeList.Length; i++) {
+                int keysize = BitConverter.ToInt32(keysizeList[i].KeyUsed, 0);
 
+                // Analyze all the blocks that have the same key - attacking each transposed block will give us one byte of the key (using the single XOR attack)
+                byte[] key = new byte[keysize];
+                byte[][] transposed = Helpers.Transpose(Helpers.SplitUp(input, keysize));
+                for (int j = 0; j < transposed.Length; j++)
+                    key[j] = attackSingleXOR(transposed[j]);
+
+                // Print the results for this key
+                string possibleMessage = Helpers.ToUTF8String(Helpers.XOR(input, key));
+                if (keysize == 29)
+                    Console.WriteLine("Keysize: " + keysize.ToString() + ", key: " + Helpers.ToHexString(key, true) + ", message: " + possibleMessage);
+            }
+
+            // Return true when one of the tried keysizes is 29 (0x1D)
+            for (int i = 0; i < keysizeList.Length; i++)
+                if (BitConverter.ToInt32(keysizeList[i].KeyUsed, 0) == 29)
+                    return true;
             return false;
         }
 
@@ -121,9 +139,8 @@ namespace CryptoPals
 
         static byte attackSingleXOR(byte[] input, ScoreItem[] scoreList) {
             // Calculate XOR with all possible keys [0, 256) and insert it in the score list
-            byte[] key = new byte[1];
             for (int k = 0; k < 256; k++) {
-                key[0] = (byte)k;
+                byte[] key = new byte[1] { (byte)k };
                 ScoreItem.InsertFrequencyAnalysis(Helpers.XOR(input, key), key, scoreList);
             }
             return scoreList[0].KeyUsed[0];

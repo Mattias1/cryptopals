@@ -83,7 +83,7 @@ namespace CryptoPals
             Console.WriteLine(ToUTF8String(raw));
         }
 
-        // Misc
+        // Byte array manipulations
         /// <summary>
         /// Copy a part of the raw array
         /// </summary>
@@ -93,10 +93,46 @@ namespace CryptoPals
         /// <returns></returns>
         public static byte[] CopyPartOf(byte[] raw, int start, int length) {
             byte[] result = new byte[length];
-            Array.Copy(raw, start, result, 0, length);
+            if (start + length > raw.Length)
+                Array.Copy(raw, start, result, 0, raw.Length - start);
+            else
+                Array.Copy(raw, start, result, 0, length);
             return result;
         }
 
+        /// <summary>
+        /// Split up the raw byte array in smaller byte arrays of a fixed (maximum) blocksize
+        /// </summary>
+        /// <param name="raw"></param>
+        /// <param name="blocksize"></param>
+        /// <returns></returns>
+        public static byte[][] SplitUp(byte[] raw, int blocksize) {
+            byte[][] result = new byte[(raw.Length + blocksize - 1) / blocksize][]; // Integer division rounded up (careful of overflowing)
+            for (int i = 0; i < result.Length; i++)
+                result[i] = CopyPartOf(raw, i * blocksize, blocksize);
+            return result;
+        }
+
+        /// <summary>
+        /// Transpose the array of byte arrays
+        /// </summary>
+        /// <param name="blocks"></param>
+        /// <returns></returns>
+        public static byte[][] Transpose(byte[][] blocks) {
+            if (blocks.Length == 0)
+                return new byte[0][];
+
+            byte[][] result = new byte[blocks[0].Length][]; // This is the blocksize
+            int smallIndex = blocks[blocks.Length - 1].Length;
+            for (int i = 0; i < result.Length; i++) {
+                result[i] = new byte[i >= smallIndex ? blocks.Length - 1 : blocks.Length]; // This is the number of i-th bytes of all blocks
+                for (int b = 0; b < blocks.Length; b++)
+                    result[i][b] = blocks[b][i];
+            }
+            return result;
+        }
+
+        // Misc
         /// <summary>
         /// X-OR a message with a key (repeated if shorter than message)
         /// </summary>

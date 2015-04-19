@@ -10,6 +10,11 @@ namespace CryptoPals
         public byte[] KeyUsed;
 
         // Properties
+        public int KeyUsedInt {
+            get { return BitConverter.ToInt32(this.KeyUsed, 0); }
+            set { this.KeyUsed = BitConverter.GetBytes(value); }
+        }
+
         public string Base64String {
             get { return Convert.ToBase64String(this.Source); }
         }

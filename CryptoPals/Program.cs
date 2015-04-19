@@ -10,16 +10,51 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge7();
+            bool result = challenge8();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
         }
 
+        // Detect ECB mode
+        static bool challenge8() {
+            // Input:  All hex strings in file Data/8.txt
+            // Answer: -
+
+            // Get the lines with the highest number of equal blocks
+            // (this does not guarantee anything, it could be chance, but the probability is probably low xD)
+            // (I am really assuming that the plaintext has at least some equal blocks)
+            int lineNumber = 0;
+            ScoreItem[] scoreList = new ScoreItem[5];
+            using (StreamReader reader = new StreamReader("Data/8.txt")) {
+                string line;
+                while ((line = reader.ReadLine()) != null) {
+                    // Init
+                    lineNumber++;
+                    byte[] input = Helpers.FromHexString(line);
+                    byte[][] blocks = Helpers.SplitUp(input, 16);
+
+                    // Count the number of equal blocks .
+                    ScoreItem current = new ScoreItem(input);
+                    current.KeyUsedInt = lineNumber;
+                    for (int i = 0; i < blocks.Length - 1; i++)
+                        for (int j = i + 1; j < blocks.Length; j++)
+                            if (Helpers.Equals(blocks[i], blocks[j]))
+                                current.Score--;
+                    current.InsertInScoreList(scoreList);
+                }
+            }
+
+            // Display the best ones
+            ScoreItem.DisplayScoreList(scoreList, false);
+
+            return scoreList[0].KeyUsedInt == 133;
+        }
+
         // Decrypt AES-ECB using a key
         static bool challenge7() {
-            // Input:  The base64 content of the file Data/7.txt
+            // Input:  The base64 encoded content of the file Data/7.txt
             //         The key is "YELLOW SUBMARINE".
             // Amswer: -
 
@@ -27,14 +62,14 @@ namespace CryptoPals
             byte[] key = Helpers.FromUTF8String("YELLOW SUBMARINE");
 
             byte[] result = BlockCipher.Decrypt<AesManaged>(input, key, null, CipherMode.ECB);
-            Console.WriteLine(Helpers.ToUTF8String(result));
+            Helpers.PrintUTF8String(result);
 
             return result.Length == 2880;
         }
 
         // Break a file decrypted with the repeating XOR
         static bool challenge6() {
-            // Input:  The base64 content of the file Data/6.txt
+            // Input:  The base64 encoded content of the file Data/6.txt
             // Answer: -
 
             // Test hamming distance
@@ -53,7 +88,7 @@ namespace CryptoPals
             ScoreItem[] keysizeList = new ScoreItem[3];
             for (int keysize = 2; keysize < 40; keysize++) {
                 ScoreItem current = new ScoreItem(input);
-                current.KeyUsed = BitConverter.GetBytes(keysize);
+                current.KeyUsedInt = keysize;
                 for (int i = 0; i < nrOfSamples * 2; i += 2) {
                     byte[] a = Helpers.CopyPartOf(input, keysize * i, keysize);
                     byte[] b = Helpers.CopyPartOf(input, keysize * (i + 1), keysize);
@@ -68,7 +103,7 @@ namespace CryptoPals
 
             // Attack the Vigenere cipher, because we are not 100% sure on the keysize, try each of the most likely ones
             for (int i = 0; i < keysizeList.Length; i++) {
-                int keysize = BitConverter.ToInt32(keysizeList[i].KeyUsed, 0);
+                int keysize = keysizeList[i].KeyUsedInt;
 
                 // Analyze all the blocks that have the same key - attacking each transposed block will give us one byte of the key (using the single XOR attack)
                 byte[] key = new byte[keysize];
@@ -84,7 +119,7 @@ namespace CryptoPals
 
             // Return true when one of the tried keysizes is 29 (0x1D)
             for (int i = 0; i < keysizeList.Length; i++)
-                if (BitConverter.ToInt32(keysizeList[i].KeyUsed, 0) == 29)
+                if (keysizeList[i].KeyUsedInt == 29)
                     return true;
             return false;
         }
@@ -110,7 +145,7 @@ namespace CryptoPals
 
         // Detect (and break) the message encrypted with a single XOR
         static bool challenge4() {
-            // Input:  All strings in file Data/4.txt
+            // Input:  All hex strings in file Data/4.txt
             // Answer: -
 
             // Inits
@@ -185,8 +220,8 @@ namespace CryptoPals
             // Answer: SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t
 
             // Easter egg - Input: "I'm killing your brain like a poisenous mushroom"
-            byte[] raw = Helpers.FromHexString("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d");
-            string result = Convert.ToBase64String(raw);
+            byte[] input = Helpers.FromHexString("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d");
+            string result = Convert.ToBase64String(input);
             Console.WriteLine(result);
 
             return result == "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t";

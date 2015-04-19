@@ -85,7 +85,7 @@ namespace CryptoPals
         }
 
         /// <summary>
-        /// Return the content of a base64 encoded file as a byte array.
+        /// Return the content of a base64 encoded file as a byte array
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
@@ -155,6 +155,22 @@ namespace CryptoPals
             for (int i = 0; i < message.Length; i++)
                 result[i] = (byte)(message[i] ^ key[i % key.Length]);
             return result;
+        }
+
+        /// <summary>
+        /// Return whether or not two byte arrays are equal (in content, not (nescessarily) memory address)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool Equals(byte[] a, byte[] b) {
+            if (a.Length != b.Length)
+                return false;
+
+            for (int i = 0; i < a.Length; i++)
+                if (a[i] != b[i])
+                    return false;
+            return true;
         }
 
         /// <summary>

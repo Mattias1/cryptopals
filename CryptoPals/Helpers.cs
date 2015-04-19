@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 
 namespace CryptoPals
@@ -81,6 +82,16 @@ namespace CryptoPals
         /// <param name="raw"></param>
         public static void PrintUTF8String(byte[] raw) {
             Console.WriteLine(ToUTF8String(raw));
+        }
+
+        /// <summary>
+        /// Return the content of a base64 encoded file as a byte array.
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <returns></returns>
+        public static byte[] ReadBase64File(string filename) {
+            string file = File.ReadAllText(filename).Replace("\n", "").Replace("\r", "");
+            return Convert.FromBase64String(file);
         }
 
         // Byte array manipulations

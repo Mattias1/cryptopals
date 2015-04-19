@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Security.Cryptography;
 
 namespace CryptoPals
 {
@@ -10,11 +10,26 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge6();
+            bool result = challenge7();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Decrypt AES-ECB using a key
+        static bool challenge7() {
+            // Input:  The base64 content of the file Data/7.txt
+            //         The key is "YELLOW SUBMARINE".
+            // Amswer: -
+
+            byte[] input = Helpers.ReadBase64File("Data/7.txt");
+            byte[] key = Helpers.FromUTF8String("YELLOW SUBMARINE");
+
+            byte[] result = BlockCipher.Decrypt<AesManaged>(input, key, null, CipherMode.ECB);
+            Console.WriteLine(Helpers.ToUTF8String(result));
+
+            return result.Length == 2880;
         }
 
         // Break a file decrypted with the repeating XOR
@@ -31,8 +46,7 @@ namespace CryptoPals
                 return false;
 
             // Read the file
-            string file = File.ReadAllText("Data/6.txt").Replace("\n", "").Replace("\r", "");
-            byte[] input = Convert.FromBase64String(file);
+            byte[] input = Helpers.ReadBase64File("Data/6.txt");
 
             // Find the keysize
             int nrOfSamples = 5;

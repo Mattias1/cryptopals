@@ -10,11 +10,51 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge8();
+            bool result = challenge9();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Implement PKCS#7 padding
+        static bool challenge9() {
+            // Input:  "YELLOW SUBMARINE"
+            // Answer: "YELLOW SUBMARINE\x04\x04\x04\x04"
+
+            byte[] input = Helpers.FromUTF8String("YELLOW SUBMARINE");
+            byte blocksize = 20;
+
+            byte[] padded = Helpers.PadWith(input, blocksize, (byte)(blocksize - input.Length % blocksize));
+            string result = Helpers.ToUTF8String(padded);
+            Console.WriteLine(result);
+
+            return result == "YELLOW SUBMARINE\x04\x04\x04\x04";
+        }
+
+        #region Set 1
+        // Run all challenges of set 1
+        static bool runSet1() {
+            bool result = true;
+
+            Console.WriteLine("Challenge 1:");
+            result &= challenge1();
+            Console.WriteLine("\nChallenge 2:");
+            result &= challenge2();
+            Console.WriteLine("\nChallenge 3:");
+            result &= challenge3();
+            Console.WriteLine("\nChallenge 4:");
+            result &= challenge4();
+            Console.WriteLine("\nChallenge 5:");
+            result &= challenge5();
+            Console.WriteLine("\nChallenge 6:");
+            result &= challenge6();
+            Console.WriteLine("\nChallenge 7:");
+            result &= challenge7();
+            Console.WriteLine("\nChallenge 8:");
+            result &= challenge8();
+
+            return result;
         }
 
         // Detect ECB mode
@@ -226,5 +266,7 @@ namespace CryptoPals
 
             return result == "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t";
         }
+
+        #endregion
     }
 }

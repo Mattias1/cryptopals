@@ -118,7 +118,7 @@ namespace CryptoPals
         /// <param name="blocksize"></param>
         /// <returns></returns>
         public static byte[][] SplitUp(byte[] raw, int blocksize) {
-            byte[][] result = new byte[(raw.Length + blocksize - 1) / blocksize][]; // Integer division rounded up (careful of overflowing)
+            byte[][] result = new byte[(raw.Length + blocksize - 1) / blocksize][]; // Integer division rounded up (beware of overflowing)
             for (int i = 0; i < result.Length; i++)
                 result[i] = CopyPartOf(raw, i * blocksize, blocksize);
             return result;
@@ -140,6 +140,23 @@ namespace CryptoPals
                 for (int b = 0; b < blocks.Length; b++)
                     result[i][b] = blocks[b][i];
             }
+            return result;
+        }
+
+        /// <summary>
+        /// Pad an array so that it is a multiple of a certain blocksize
+        /// </summary>
+        /// <param name="raw"></param>
+        /// <param name="blocksize"></param>
+        /// <param name="padByte"></param>
+        /// <returns></returns>
+        public static byte[] PadWith(byte[] raw, int blocksize, byte padByte = 0) {
+            byte[] result = new byte[((raw.Length + blocksize - 1) / blocksize) * blocksize]; // Integer division rounded up (beware of overflowing) and then multiply back
+
+            Array.Copy(raw, result, raw.Length);
+            for (int i = raw.Length; i < result.Length; i++)
+                result[i] = padByte;
+
             return result;
         }
 

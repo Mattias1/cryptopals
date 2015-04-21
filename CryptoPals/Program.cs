@@ -10,11 +10,39 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge9();
+            bool result = challenge10();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Implement CBC mode of AES
+        static bool challenge10() {
+            // Input:  The base64 encoded content of file Data/10.txt
+            //         The key is: "YELLOW SUBMARINE"
+            //         The IV consists of all ASCII 0 charachters ("\x00\x00\x00...")
+
+            byte[] input = Helpers.ReadBase64File("Data/10.txt");
+            byte[] key = Helpers.FromUTF8String("YELLOW SUBMARINE");
+            byte[] iv = new byte[key.Length];
+
+            // byte[] result = BlockCipher.Decrypt<AesManaged>(input, key, iv, CipherMode.CBC); // HAX! CHEAT!
+            int blocksize = 16;
+            byte[] result = new byte[input.Length];
+            byte[] block = iv, prevBlock = iv;
+            for (int i = 0; i < input.Length; i += blocksize) {
+                block = Helpers.CopyPartOf(input, i, blocksize);
+                block = BlockCipher.Decrypt<AesManaged>(block, key, null, CipherMode.ECB, PaddingMode.None);
+                block = Helpers.XOR(block, prevBlock);
+                prevBlock = Helpers.CopyPartOf(input, i, blocksize);
+                Array.Copy(block, 0, result, i, blocksize);
+            }
+            result = zeroPKCS7(result);
+            Helpers.PrintUTF8String(result);
+
+            // How original, the content is the same as for challenge 7 and 6
+            return Helpers.QuickCheck(result, 2880, "I'm back and I'm ringin' the bell");
         }
 
         // Implement PKCS#7 padding
@@ -25,14 +53,30 @@ namespace CryptoPals
             byte[] input = Helpers.FromUTF8String("YELLOW SUBMARINE");
             byte blocksize = 20;
 
-            byte[] padded = Helpers.PadWith(input, blocksize, (byte)(blocksize - input.Length % blocksize));
+            byte[] padded = PKCS7(input, blocksize);
             string result = Helpers.ToUTF8String(padded);
             Console.WriteLine(result);
 
             return result == "YELLOW SUBMARINE\x04\x04\x04\x04";
         }
 
+        static byte[] PKCS7(byte[] raw, int blocksize = 16) {
+            // Add PKCS#7 padding
+            return Helpers.ForcePadWith(raw, blocksize, (byte)(blocksize - raw.Length % blocksize));
+        }
+        static byte[] unPKCS7(byte[] raw, int blocksize = 16) {
+            // Remove PKCS#7 padding. Note that the .NET AES doesn't really unpad, it just replaces them with zeroes.
+            return Helpers.CopyPartOf(raw, 0, raw.Length - raw[raw.Length - 1]);
+        }
+        static byte[] zeroPKCS7(byte[] raw, int blocksize = 16) {
+            // Remove PKCS#7 padding. This time, overwrite the padding with zeroes, just like the .NET AES.
+            byte[] result = new byte[raw.Length];
+            Array.Copy(raw, 0, result, 0, raw.Length - raw[raw.Length - 1]);
+            return result;
+        }
+
         #region Set 1
+
         // Run all challenges of set 1
         static bool runSet1() {
             bool result = true;
@@ -95,16 +139,16 @@ namespace CryptoPals
         // Decrypt AES-ECB using a key
         static bool challenge7() {
             // Input:  The base64 encoded content of the file Data/7.txt
-            //         The key is "YELLOW SUBMARINE".
+            //         The key is "YELLOW SUBMARINE"
             // Amswer: -
 
             byte[] input = Helpers.ReadBase64File("Data/7.txt");
             byte[] key = Helpers.FromUTF8String("YELLOW SUBMARINE");
 
-            byte[] result = BlockCipher.Decrypt<AesManaged>(input, key, null, CipherMode.ECB);
+            byte[] result = BlockCipher.Decrypt<AesManaged>(input, key, null, CipherMode.ECB, PaddingMode.PKCS7);
             Helpers.PrintUTF8String(result);
 
-            return result.Length == 2880;
+            return Helpers.QuickCheck(result, 2880, "I'm back and I'm ringin' the bell"); // Padded with 4 zeroes
         }
 
         // Break a file decrypted with the repeating XOR

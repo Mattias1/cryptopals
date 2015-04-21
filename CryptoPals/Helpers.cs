@@ -144,14 +144,30 @@ namespace CryptoPals
         }
 
         /// <summary>
-        /// Pad an array so that it is a multiple of a certain blocksize
+        /// Pad an array so that it is a multiple of a certain blocksize (or don't pad if it already is)
         /// </summary>
         /// <param name="raw"></param>
         /// <param name="blocksize"></param>
         /// <param name="padByte"></param>
         /// <returns></returns>
-        public static byte[] PadWith(byte[] raw, int blocksize, byte padByte = 0) {
+        public static byte[] PadOptionalWith(byte[] raw, int blocksize, byte padByte = 0) {
             byte[] result = new byte[((raw.Length + blocksize - 1) / blocksize) * blocksize]; // Integer division rounded up (beware of overflowing) and then multiply back
+
+            Array.Copy(raw, result, raw.Length);
+            for (int i = raw.Length; i < result.Length; i++)
+                result[i] = padByte;
+
+            return result;
+        }
+        /// <summary>
+        /// Pad an array so that it is a multiple of a certain blocksize (if it already is, add an entire block)
+        /// </summary>
+        /// <param name="raw"></param>
+        /// <param name="blocksize"></param>
+        /// <param name="padByte"></param>
+        /// <returns></returns>
+        public static byte[] ForcePadWith(byte[] raw, int blocksize, byte padByte = 0) {
+            byte[] result = new byte[(raw.Length / blocksize + 1) * blocksize];
 
             Array.Copy(raw, result, raw.Length);
             for (int i = raw.Length; i < result.Length; i++)
@@ -208,6 +224,17 @@ namespace CryptoPals
                     if ((a[i] & bit) != (b[i] & bit))
                         result++;
             return result;
+        }
+
+        /// <summary>
+        /// Do a quick check on whether or not the result is correct-ish
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="totalLength"></param>
+        /// <param name="begin"></param>
+        /// <returns></returns>
+        public static bool QuickCheck(byte[] result, int totalLength, string begin) {
+            return result.Length == totalLength && Helpers.ToUTF8String(Helpers.CopyPartOf(result, 0, begin.Length)) == begin;
         }
     }
 }

@@ -10,11 +10,74 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge10();
+            bool result = challenge11();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // An ECB/CBC detection oracle
+        static bool challenge11() {
+            // The goal is to write something that given a black box, that it detects whether it encrypts with ECB or CBC
+            // Input:  -
+
+            Console.WriteLine("Whether or not the oracle used ECB mode or not (CBC mode)");
+            for (int i = 0; i < 10; i++)
+                Console.WriteLine("  ECB detected: " + oracleUsesECB().ToString());
+
+            return true;
+        }
+
+        static bool oracleUsesECB() {
+            // Detect whether or not the function encrypted using ECB mode
+            int blocksize = 16;
+            int blocks = 6;
+
+            byte[] input = new byte[blocks * blocksize]; // input some blocks with only zeroes - at least 5 of them should give equal blocks after encryption with ECB
+            byte[][] cipherBlocks = Helpers.SplitUp(encryptionOracle(input), blocksize);
+
+            int equalBlocks = 1;
+            for (int i = 0; i < cipherBlocks.Length - 1; i++)
+                if (Helpers.Equals(cipherBlocks[i], cipherBlocks[i + 1]))
+                    equalBlocks++;
+
+            return equalBlocks >= blocks - 1;
+        }
+        static byte[] encryptionOracle(byte[] input) {
+            // This function takes an input and encrypts it randomly with ECB or CBC. It also adds random bytes before and after the input array.
+
+            // Initialize
+            byte[] key = new byte[16];
+            byte[] before = new byte[Helpers.Random.Next(5, 11)];
+            byte[] after = new byte[Helpers.Random.Next(5, 11)];
+            byte[] result = new byte[before.Length + input.Length + after.Length];
+            byte[] iv = null;
+
+            // Generate content
+            Helpers.Random.NextBytes(key);
+            Helpers.Random.NextBytes(before);
+            Helpers.Random.NextBytes(after);
+
+            // Fill the result array with the original and generated input
+            Array.Copy(before, 0, result, 0, before.Length);
+            Array.Copy(input, 0, result, before.Length, input.Length);
+            Array.Copy(after, 0, result, before.Length + input.Length, after.Length);
+
+            // Encrypt the result array
+            if (Helpers.Random.Next(2) == 0) {
+                // ECB
+                Console.WriteLine("The encryption oracle secretly used ECB mode... ");
+                result = BlockCipher.Encrypt<AesManaged>(result, key, null, CipherMode.ECB, PaddingMode.PKCS7);
+            }
+            else {
+                // CBC
+                Console.WriteLine("The encryption oracle secretly used CBC mode... ");
+                iv = new byte[key.Length];
+                Helpers.Random.NextBytes(iv);
+                result = BlockCipher.Encrypt<AesManaged>(result, key, iv, CipherMode.CBC, PaddingMode.PKCS7);
+            }
+            return result;
         }
 
         // Implement CBC mode of AES

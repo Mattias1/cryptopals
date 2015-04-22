@@ -6,6 +6,16 @@ namespace CryptoPals
 {
     static class Helpers
     {
+        // Random
+        private static Random random;
+        public static Random Random {
+            get {
+                if (random == null)
+                    random = new Random();
+                return random;
+            }
+        }
+
         // Encodings
         /// <summary>
         /// Convert a string with hexadecimal digits [0..9, A..F]* to a byte array.

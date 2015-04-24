@@ -10,11 +10,99 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge11();
+            bool result = challenge12();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        static byte[] fixedKey;
+
+        // Byte at a time ECB decription (simple) - Break AES in ECB mode o_O
+        static bool challenge12() {
+            // Input:  Some unknown base64 string: (this is the plaintext that we need to crack - it is used inside the 'secret' ECB oracle)
+            //         Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg
+            //         aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
+            //         dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg
+            //         YnkK
+
+            // Detect blocksize and cipher mode (16 bytes, ECB)
+            int messageLength;
+            int blocksize = oracleBlockSize(ECBEncryptionOracle, out messageLength);
+            bool modeIsECB = oracleUsesECB(ECBEncryptionOracle);
+            Console.WriteLine("Blocksize: " + blocksize.ToString() + " bytes, messageLength: " + messageLength.ToString() + " bytes, mode: " + (modeIsECB ? "ECB" : "Unknown") + "\n");
+
+            // Decrypt the message inside the oracle
+            byte[] result = new byte[messageLength];
+            byte[] cipher, input;
+            byte[][] lookupTable;
+            for (int hackPosition = 0; hackPosition < result.Length; hackPosition++) { // The (position of the) byte we are going to decrypt
+                // Build the lookup table
+                lookupTable = new byte[256][];
+                for (int b = 0; b < 256; b++) {
+                    // Recreate the input for the current block to analyze
+                    input = new byte[blocksize];
+                    for (int i = 1; i <= hackPosition && i < blocksize; i++)
+                        input[input.Length - i - 1] = result[hackPosition - i]; // Copy the part of the text we already decrypted (well, the last #blocksize part, padded with zeroes to the front)
+                    input[blocksize - 1] = (byte)b;                             // Try all values for the last byte (the one we don't know yet)
+                    cipher = ECBEncryptionOracle(input);                        // Now feed it to the oracle
+                    lookupTable[b] = Helpers.CopyPartOf(cipher, 0, blocksize);  // And there we have all possible encryptions if the block is being feeded to the oracle such that the unknown byte is at the back
+                }
+                // Lookup the value of the byte to crack
+                int offset = hackPosition / blocksize * blocksize;
+                input = new byte[blocksize - hackPosition + offset - 1];
+                cipher = Helpers.CopyPartOf(ECBEncryptionOracle(input), offset, blocksize);
+                for (int b = 0; b < 256; b++)
+                    if (Helpers.Equals(lookupTable[b], cipher)) {
+                        result[hackPosition] = (byte)b;
+                        break;
+                    }
+            }
+
+            // The decrypted message
+            Helpers.PrintUTF8String(result);
+
+            return Helpers.QuickCheck(result, 138, "Rollin' in my 5.0");
+        }
+
+        static int oracleBlockSize(Func<byte[], byte[]> oracleFunction, out int messageLength) {
+            // Return the block size of an oracle function
+            byte[] input = new byte[0];
+            int initialLength = oracleFunction(input).Length;
+            for (int i = 0; i < 9999; i++) {
+                input = new byte[input.Length + 1];
+                int tempLength = oracleFunction(input).Length;
+                if (tempLength != initialLength) {
+                    messageLength = initialLength - i - 1;
+                    return tempLength - initialLength;
+                }
+            }
+            throw new Exception("The oracle has no distinguishable blocksize in 10k tries");
+        }
+
+        static byte[] ECBEncryptionOracle(byte[] input) {
+            // This function takes an input and encrypts it with a fixed unknown key (fixedKey)
+            int blocksize = 16;
+
+            // Generate a random (so unknown) key and use it throughout the rest of the program
+            if (fixedKey == null) {
+                fixedKey = new byte[blocksize];
+                Helpers.Random.NextBytes(fixedKey);
+            }
+
+            // The plaintext to encrypt will be [input + secret message] (the secret message that we want to decrypt)
+            byte[] secretMessage = Convert.FromBase64String(
+                "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg"
+                + "aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq"
+                + "dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg"
+                + "YnkK");
+            byte[] plain = new byte[input.Length + secretMessage.Length];
+            Array.Copy(input, 0, plain, 0, input.Length);
+            Array.Copy(secretMessage, 0, plain, input.Length, secretMessage.Length);
+
+            // Encrypt and return
+            return BlockCipher.Encrypt<AesManaged>(plain, fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
         }
 
         // An ECB/CBC detection oracle
@@ -24,18 +112,18 @@ namespace CryptoPals
 
             Console.WriteLine("Whether or not the oracle used ECB mode or not (CBC mode)");
             for (int i = 0; i < 10; i++)
-                Console.WriteLine("  ECB detected: " + oracleUsesECB().ToString());
+                Console.WriteLine("  ECB detected: " + oracleUsesECB(randomECB_CBCEncryptionOracle).ToString());
 
             return true;
         }
 
-        static bool oracleUsesECB() {
+        static bool oracleUsesECB(Func<byte[], byte[]> oracleFunction) {
             // Detect whether or not the function encrypted using ECB mode
             int blocksize = 16;
             int blocks = 6;
 
             byte[] input = new byte[blocks * blocksize]; // input some blocks with only zeroes - at least 5 of them should give equal blocks after encryption with ECB
-            byte[][] cipherBlocks = Helpers.SplitUp(encryptionOracle(input), blocksize);
+            byte[][] cipherBlocks = Helpers.SplitUp(oracleFunction(input), blocksize);
 
             int equalBlocks = 1;
             for (int i = 0; i < cipherBlocks.Length - 1; i++)
@@ -44,7 +132,8 @@ namespace CryptoPals
 
             return equalBlocks >= blocks - 1;
         }
-        static byte[] encryptionOracle(byte[] input) {
+
+        static byte[] randomECB_CBCEncryptionOracle(byte[] input) {
             // This function takes an input and encrypts it randomly with ECB or CBC. It also adds random bytes before and after the input array.
 
             // Initialize

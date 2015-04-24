@@ -93,6 +93,13 @@ namespace CryptoPals
         public static void PrintUTF8String(byte[] raw) {
             Console.WriteLine(ToUTF8String(raw));
         }
+        /// <summary>
+        /// Print a byte array as a hexadecimal string to the console
+        /// </summary>
+        /// <param name="raw"></param>
+        public static void PrintHexString(byte[] raw, bool add0x = true) {
+            Console.WriteLine(ToHexString(raw, add0x));
+        }
 
         /// <summary>
         /// Return the content of a base64 encoded file as a byte array

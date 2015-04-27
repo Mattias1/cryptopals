@@ -129,6 +129,26 @@ namespace CryptoPals
         }
 
         /// <summary>
+        /// Concatenate all given raw arrays into one byte array
+        /// </summary>
+        /// <param name="raws"></param>
+        /// <returns></returns>
+        public static byte[] Concatenate(params byte[][] arrays) {
+            // Create an array with the correct length
+            int length = 0;
+            foreach (byte[] raw in arrays)
+                length += raw.Length;
+            byte[] result = new byte[length];
+            // Fill it
+            int index = 0;
+            foreach (byte[] raw in arrays) {
+                Array.Copy(raw, 0, result, index, raw.Length);
+                index += raw.Length;
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Split up the raw byte array in smaller byte arrays of a fixed (maximum) blocksize
         /// </summary>
         /// <param name="raw"></param>

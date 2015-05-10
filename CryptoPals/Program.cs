@@ -12,11 +12,39 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge14();
+            bool result = challenge15();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Remove PKCS#7 padding, with exception if it fails
+        static bool challenge15() {
+            // Input:  "ICE ICE BABY\x04\x04\x04\x04", "ICE ICE BABY\x05\x05\x05\x05", "ICE ICE BABY\x01\x02\x03\x04"
+            // Answer: "ICE ICE BABY", exception, exception
+            bool exception1 = false, exception2 = false;
+
+            string result = Helpers.ToUTF8String(unPKCS7(Helpers.FromUTF8String("ICE ICE BABY\x04\x04\x04\x04")));
+            Console.WriteLine(result);
+
+            try {
+                unPKCS7(Helpers.FromUTF8String("ICE ICE BABY\x05\x05\x05\x05"));
+            }
+            catch (Exception e) {
+                exception1 = true;
+                Console.WriteLine(e.Message);
+            }
+
+            try {
+                unPKCS7(Helpers.FromUTF8String("ICE ICE BABY\x01\x02\x03\x04"));
+            }
+            catch (Exception e) {
+                exception2 = true;
+                Console.WriteLine(e.Message);
+            }
+
+            return result == "ICE ICE BABY" && exception1 && exception2;
         }
 
         // Byte at a time ECB decryption (hard)
@@ -367,7 +395,11 @@ namespace CryptoPals
         }
         static byte[] unPKCS7(byte[] raw, int blocksize = 16) {
             // Remove PKCS#7 padding. Note that the .NET AES doesn't really unpad, it just replaces them with zeroes.
-            return Helpers.CopyPartOf(raw, 0, raw.Length - raw[raw.Length - 1]);
+            int paddingLength = raw[raw.Length - 1];
+            for (int i = 0; i < paddingLength; i++)
+                if (raw[raw.Length - i - 1] != paddingLength)
+                    throw new Exception("Bad padding.");
+            return Helpers.CopyPartOf(raw, 0, raw.Length - paddingLength);
         }
         static byte[] zeroPKCS7(byte[] raw, int blocksize = 16) {
             // Remove PKCS#7 padding. This time, overwrite the padding with zeroes, just like the .NET AES.

@@ -6,17 +6,115 @@ namespace CryptoPals
 {
     class Program
     {
-        static byte[] fixedKey;
+        static byte[] fixedKey, fixedBytes;
 
         static void Main(string[] args) {
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge13();
+            bool result = challenge14();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Byte at a time ECB decryption (hard)
+        static bool challenge14() {
+            // Input:  Same as challenge 12, but now with a slightly modified oracle
+
+            // Detect blocksize and cipher mode (16 bytes, ECB)
+            int messageLength;
+            int blocksize = findOracleBlockSize(encryptionOracle14, out messageLength);
+            bool modeIsECB = oracleUsesECB(encryptionOracle14);
+
+            // Determine the length of the random prefix (this is the new part)
+            int inversePrefixLength = 0, totalPrefixLength = 0;
+            byte[] cipher, input;
+            for (int i = 0; i < blocksize; i++) {
+                int equalBlocks = 5;
+                input = new byte[i + equalBlocks * blocksize];
+                cipher = encryptionOracle14(input);
+                byte[][] cipherBlocks = Helpers.SplitUp(cipher, blocksize);
+
+                bool foundPrefixLength = false;
+                for (int j = 0; j < cipherBlocks.Length - equalBlocks; j++) {
+                    foundPrefixLength = true;
+                    for (int k = equalBlocks - 1; k >= 1; k--) {
+                        if (!Helpers.Equals(cipherBlocks[j], cipherBlocks[j + k])) {
+                            foundPrefixLength = false;
+                            break;
+                        }
+                    }
+                    if (foundPrefixLength) {
+                        inversePrefixLength = i;
+                        totalPrefixLength = j * blocksize;
+                        break;
+                    }
+                }
+                if (foundPrefixLength) {
+                    break;
+                }
+            }
+
+            // Summarize findings so far
+            Console.WriteLine("Blocksize: " + blocksize.ToString() + " bytes, messageLength: " + messageLength.ToString() + " bytes, mode: " + (modeIsECB ? "ECB" : "Unknown"));
+            Console.WriteLine("inversePrefixLength: " + inversePrefixLength.ToString() + ", totalPrefixLength: " + totalPrefixLength.ToString() + "\n");
+
+            // Decrypt the message inside the oracle
+            byte[] result = new byte[messageLength - totalPrefixLength + inversePrefixLength];
+            byte[][] lookupTable;
+            for (int hackPosition = 0; hackPosition < result.Length; hackPosition++) { // The (position of the) byte we are going to decrypt
+                // Build the lookup table
+                lookupTable = new byte[256][];
+                for (int b = 0; b < 256; b++) {
+                    // Recreate the input for the current block to analyze
+                    input = new byte[inversePrefixLength + blocksize];
+                    for (int i = 1; i <= hackPosition && i < blocksize; i++)
+                        input[input.Length - i - 1] = result[hackPosition - i];                 // Copy the part of the text we already decrypted (well, the last #blocksize part, padded with zeroes to the front)
+                    input[input.Length - 1] = (byte)b;                                          // Try all values for the last byte (the one we don't know yet)
+                    cipher = encryptionOracle14(input);                                         // Now feed it to the oracle
+                    lookupTable[b] = Helpers.CopyPartOf(cipher, totalPrefixLength, blocksize);  // And there we have all possible encryptions if the block is being feeded to the oracle such that the unknown byte is at the back
+                }
+                // Lookup the value of the byte to crack
+                int offset = hackPosition / blocksize * blocksize;
+                input = new byte[inversePrefixLength + blocksize - hackPosition + offset - 1];
+                cipher = Helpers.CopyPartOf(encryptionOracle14(input), totalPrefixLength + offset, blocksize);
+                for (int b = 0; b < 256; b++)
+                    if (Helpers.Equals(lookupTable[b], cipher)) {
+                        result[hackPosition] = (byte)b;
+                        break;
+                    }
+            }
+
+            // The decrypted message
+            Helpers.PrintUTF8String(result);
+
+            return Helpers.QuickCheck(result, 138, "Rollin' in my 5.0");
+        }
+
+        static byte[] encryptionOracle14(byte[] input) {
+            // This function takes an input and encrypts it with a fixed unknown key (fixedKey)
+            int blocksize = 16;
+
+            // Generate a random (so unknown) key and use it throughout the rest of the program
+            if (fixedKey == null) {
+                fixedKey = new byte[blocksize];
+                Helpers.Random.NextBytes(fixedKey);
+                fixedBytes = new byte[Helpers.Random.Next(5, 55)];
+                Helpers.Random.NextBytes(fixedBytes);
+            }
+
+            // The plaintext to encrypt will be [random_prefix + input + secret message] (the secret message that we want to decrypt)
+            byte[] secretMessage = Convert.FromBase64String(
+                "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkg"
+                + "aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq"
+                + "dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg"
+                + "YnkK");
+            byte[] plain = Helpers.Concatenate(fixedBytes, input, secretMessage);
+
+            // Encrypt and return
+            return BlockCipher.Encrypt<AesManaged>(plain, fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
         }
 
         // ECB cut-and-paste
@@ -42,12 +140,12 @@ namespace CryptoPals
             byte[] adminWord = PKCS7(Helpers.FromUTF8String("admin"), blocksize);
             byte[] after = Helpers.FromUTF8String("@gmail.com");
             byte[] input = Helpers.Concatenate(before, adminWord, after);
-            byte[] cipher = encyptionOracle13(input);
+            byte[] cipher = encryptionOracle13(input);
             byte[] encryptedAdminWord = Helpers.CopyPartOf(cipher, blocksize, blocksize);
 
             // Second try
             input = Helpers.FromUTF8String("AAAA@gmail.com");
-            cipher = encyptionOracle13(input);
+            cipher = encryptionOracle13(input);
             before = Helpers.CopyPartOf(cipher, 0, 2 * blocksize);
             byte[] encryptedResult = Helpers.Concatenate(before, encryptedAdminWord);
 
@@ -58,7 +156,7 @@ namespace CryptoPals
             return Helpers.QuickCheck(result, 3 * blocksize, "email=AAAA@gmail.com&uid=1&role=admin");
         }
 
-        static byte[] encyptionOracle13(byte[] email) {
+        static byte[] encryptionOracle13(byte[] email) {
             // Emulate a function at the server to generate a valid encrypted cookie
             int blocksize = 16;
 
@@ -85,8 +183,8 @@ namespace CryptoPals
 
             // Detect blocksize and cipher mode (16 bytes, ECB)
             int messageLength;
-            int blocksize = findOracleBlockSize(encyptionOracle12, out messageLength);
-            bool modeIsECB = oracleUsesECB(encyptionOracle12);
+            int blocksize = findOracleBlockSize(encryptionOracle12, out messageLength);
+            bool modeIsECB = oracleUsesECB(encryptionOracle12);
             Console.WriteLine("Blocksize: " + blocksize.ToString() + " bytes, messageLength: " + messageLength.ToString() + " bytes, mode: " + (modeIsECB ? "ECB" : "Unknown") + "\n");
 
             // Decrypt the message inside the oracle
@@ -101,14 +199,14 @@ namespace CryptoPals
                     input = new byte[blocksize];
                     for (int i = 1; i <= hackPosition && i < blocksize; i++)
                         input[input.Length - i - 1] = result[hackPosition - i]; // Copy the part of the text we already decrypted (well, the last #blocksize part, padded with zeroes to the front)
-                    input[blocksize - 1] = (byte)b;                             // Try all values for the last byte (the one we don't know yet)
-                    cipher = encyptionOracle12(input);                        // Now feed it to the oracle
+                    input[input.Length - 1] = (byte)b;                          // Try all values for the last byte (the one we don't know yet)
+                    cipher = encryptionOracle12(input);                         // Now feed it to the oracle
                     lookupTable[b] = Helpers.CopyPartOf(cipher, 0, blocksize);  // And there we have all possible encryptions if the block is being feeded to the oracle such that the unknown byte is at the back
                 }
                 // Lookup the value of the byte to crack
                 int offset = hackPosition / blocksize * blocksize;
                 input = new byte[blocksize - hackPosition + offset - 1];
-                cipher = Helpers.CopyPartOf(encyptionOracle12(input), offset, blocksize);
+                cipher = Helpers.CopyPartOf(encryptionOracle12(input), offset, blocksize);
                 for (int b = 0; b < 256; b++)
                     if (Helpers.Equals(lookupTable[b], cipher)) {
                         result[hackPosition] = (byte)b;
@@ -123,7 +221,7 @@ namespace CryptoPals
         }
 
         static int findOracleBlockSize(Func<byte[], byte[]> oracleFunction, out int messageLength) {
-            // Return the block size of an oracle function
+            // Return the block size (and message length) of an oracle function
             byte[] input = new byte[0];
             int initialLength = oracleFunction(input).Length;
             for (int i = 0; i < 9999; i++) {
@@ -137,7 +235,7 @@ namespace CryptoPals
             throw new Exception("The oracle has no distinguishable blocksize in 10k tries");
         }
 
-        static byte[] encyptionOracle12(byte[] input) {
+        static byte[] encryptionOracle12(byte[] input) {
             // This function takes an input and encrypts it with a fixed unknown key (fixedKey)
             int blocksize = 16;
 

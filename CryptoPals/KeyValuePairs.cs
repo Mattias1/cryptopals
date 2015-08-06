@@ -10,12 +10,17 @@ namespace CryptoPals
         public Dictionary<string, string> Dictionary { get; private set; }
 
         public string this[string key] {
-            get { return this.Dictionary[key]; }
+            get { return this.ContainsKey(key) ? this.Dictionary[key] : ""; }
             set { this.Dictionary.Add(key, this.ValidateValue(value)); }
         }
 
         public KeyValuePairs() {
             this.Dictionary = new Dictionary<string, string>();
+        }
+
+        public bool ContainsKey(string key) {
+            // Check whether or not this key value pair contains this key
+            return this.Dictionary.ContainsKey(key);
         }
 
         public string ValidateValue(string value) {
@@ -57,6 +62,14 @@ namespace CryptoPals
             result["email"] = email;
             result["uid"] = counter++.ToString();
             result["role"] = "user";
+            return result;
+        }
+
+        public static KeyValuePairs CookingUserdata(string userData) {
+            KeyValuePairs result = new KeyValuePairs();
+            result["comment1"] = "cooking%20MC's";
+            result["userdata"] = userData;
+            result["comment2"] = "%20like%20a%20pound%20of%20bacon";
             return result;
         }
     }

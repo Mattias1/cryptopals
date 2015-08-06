@@ -12,11 +12,48 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge15();
+            bool result = challenge16();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        static bool challenge16() {
+            // The goal again is to modify the (AES-123 CBC encrypted) cookie and slip an admin=true inside
+            // Input:  ?
+
+            return false;
+        }
+
+        static byte[] encryptionOracle16(byte[] input) {
+            // Emulate a function at the server to cook some userData like a pound of bacon
+            int blocksize = 16;
+
+            // Generate a random (so unknown) key and use it throughout the rest of the program
+            if (fixedKey == null) {
+                fixedKey = new byte[blocksize];
+                Helpers.Random.NextBytes(fixedKey);
+            }
+
+            // Generate cookie and encrypt it
+            string userData = Helpers.ToUTF8String(input);
+            KeyValuePairs cookie = KeyValuePairs.CookingUserdata(userData);
+            string url = cookie.ToUrl();
+            return BlockCipher.EncryptAES(Helpers.FromUTF8String(url), fixedKey, new byte[blocksize], CipherMode.CBC, PaddingMode.PKCS7);
+        }
+
+        static bool decryptionOracle16(byte[] cipher) {
+            // Check the cookie for admin access
+            int blocksize = 16;
+
+            // Decrypt the cookie
+            byte[] original = BlockCipher.DecryptAES(cipher, fixedKey, new byte[blocksize], CipherMode.CBC, PaddingMode.None);
+            byte[] plain = unPKCS7(original);
+
+            // Check for admin rights
+            KeyValuePairs cookie = KeyValuePairs.FromURL(Helpers.ToUTF8String(plain));
+            return cookie["admin"] == "true";
         }
 
         // Remove PKCS#7 padding, with exception if it fails
@@ -142,7 +179,7 @@ namespace CryptoPals
             byte[] plain = Helpers.Concatenate(fixedBytes, input, secretMessage);
 
             // Encrypt and return
-            return BlockCipher.Encrypt<AesManaged>(plain, fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
+            return BlockCipher.EncryptAES(plain, fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
         }
 
         // ECB cut-and-paste
@@ -178,7 +215,7 @@ namespace CryptoPals
             byte[] encryptedResult = Helpers.Concatenate(before, encryptedAdminWord);
 
             // Lets 'send' our hacked cookie back to the server and print here what the server would see
-            byte[] result = BlockCipher.Decrypt<AesManaged>(encryptedResult, fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
+            byte[] result = BlockCipher.DecryptAES(encryptedResult, fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
             Helpers.PrintUTF8String(result);
 
             return Helpers.QuickCheck(result, 3 * blocksize, "email=AAAA@gmail.com&uid=1&role=admin");
@@ -194,11 +231,11 @@ namespace CryptoPals
                 Helpers.Random.NextBytes(fixedKey);
             }
 
-            // Generate and encrypt
+            // Generate cookie and encrypt it
             string emailAddress = Helpers.ToUTF8String(email);
             KeyValuePairs cookie = KeyValuePairs.ProfileFor(emailAddress);
             string url = cookie.ToUrl();
-            return BlockCipher.Encrypt<AesManaged>(Helpers.FromUTF8String(url), fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
+            return BlockCipher.EncryptAES(Helpers.FromUTF8String(url), fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
         }
 
         // Byte at a time ECB decription (simple) - Break AES in ECB mode o_O
@@ -282,7 +319,7 @@ namespace CryptoPals
             byte[] plain = Helpers.Concatenate(input, secretMessage);
 
             // Encrypt and return
-            return BlockCipher.Encrypt<AesManaged>(plain, fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
+            return BlockCipher.EncryptAES(plain, fixedKey, null, CipherMode.ECB, PaddingMode.PKCS7);
         }
 
         // An ECB/CBC detection oracle
@@ -334,14 +371,14 @@ namespace CryptoPals
             if (Helpers.Random.Next(2) == 0) {
                 // ECB
                 Console.WriteLine("The encryption oracle secretly used ECB mode... ");
-                result = BlockCipher.Encrypt<AesManaged>(result, key, null, CipherMode.ECB, PaddingMode.PKCS7);
+                result = BlockCipher.EncryptAES(result, key, null, CipherMode.ECB, PaddingMode.PKCS7);
             }
             else {
                 // CBC
                 Console.WriteLine("The encryption oracle secretly used CBC mode... ");
                 iv = new byte[key.Length];
                 Helpers.Random.NextBytes(iv);
-                result = BlockCipher.Encrypt<AesManaged>(result, key, iv, CipherMode.CBC, PaddingMode.PKCS7);
+                result = BlockCipher.EncryptAES(result, key, iv, CipherMode.CBC, PaddingMode.PKCS7);
             }
             return result;
         }
@@ -362,7 +399,7 @@ namespace CryptoPals
             byte[] block = iv, prevBlock = iv;
             for (int i = 0; i < input.Length; i += blocksize) {
                 block = Helpers.CopyPartOf(input, i, blocksize);
-                block = BlockCipher.Decrypt<AesManaged>(block, key, null, CipherMode.ECB, PaddingMode.None);
+                block = BlockCipher.DecryptAES(block, key, null, CipherMode.ECB, PaddingMode.None);
                 block = Helpers.XOR(block, prevBlock);
                 prevBlock = Helpers.CopyPartOf(input, i, blocksize);
                 Array.Copy(block, 0, result, i, blocksize);
@@ -395,17 +432,23 @@ namespace CryptoPals
         }
         static byte[] unPKCS7(byte[] raw, int blocksize = 16) {
             // Remove PKCS#7 padding. Note that the .NET AES doesn't really unpad, it just replaces them with zeroes.
-            int paddingLength = raw[raw.Length - 1];
-            for (int i = 0; i < paddingLength; i++)
-                if (raw[raw.Length - i - 1] != paddingLength)
-                    throw new Exception("Bad padding.");
+            int paddingLength = checkPKCS7(raw);
             return Helpers.CopyPartOf(raw, 0, raw.Length - paddingLength);
         }
         static byte[] zeroPKCS7(byte[] raw, int blocksize = 16) {
             // Remove PKCS#7 padding. This time, overwrite the padding with zeroes, just like the .NET AES.
+            int paddingLength = checkPKCS7(raw);
             byte[] result = new byte[raw.Length];
-            Array.Copy(raw, 0, result, 0, raw.Length - raw[raw.Length - 1]);
+            Array.Copy(raw, 0, result, 0, raw.Length - paddingLength);
             return result;
+        }
+        static int checkPKCS7(byte[] raw) {
+            // Check whether or not the raw array is a properly PKCS7-padded. Throw when it's not.
+            int paddingLength = raw[raw.Length - 1];
+            for (int i = 0; i < paddingLength; i++)
+                if (raw[raw.Length - i - 1] != paddingLength)
+                    throw new Exception("Bad padding.");
+            return paddingLength;
         }
 
         #region Set 1
@@ -478,7 +521,7 @@ namespace CryptoPals
             byte[] input = Helpers.ReadBase64File("Data/7.txt");
             byte[] key = Helpers.FromUTF8String("YELLOW SUBMARINE");
 
-            byte[] result = BlockCipher.Decrypt<AesManaged>(input, key, null, CipherMode.ECB, PaddingMode.PKCS7);
+            byte[] result = BlockCipher.DecryptAES(input, key, null, CipherMode.ECB, PaddingMode.PKCS7);
             Helpers.PrintUTF8String(result);
 
             return Helpers.QuickCheck(result, 2880, "I'm back and I'm ringin' the bell"); // Padded with 4 zeroes
@@ -589,6 +632,7 @@ namespace CryptoPals
         static bool challenge3() {
             // Input:  1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736
             // Answer: -
+            bool test = true;
 
             // Inits
             byte[] input = Helpers.FromHexString("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736");

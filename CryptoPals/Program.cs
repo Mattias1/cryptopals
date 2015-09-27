@@ -19,11 +19,53 @@ namespace CryptoPals
             Console.ReadLine();
         }
 
+        #region Set 2
+
+        // Run all challenges of set 2
+        static bool runSet2() {
+            bool result = true;
+
+            Console.WriteLine("Challenge 9:");
+            result &= challenge9();
+            Console.WriteLine("\nChallenge 10:");
+            result &= challenge10();
+            Console.WriteLine("\nChallenge 11:");
+            result &= challenge11();
+            Console.WriteLine("\nChallenge 12:");
+            result &= challenge12();
+            Console.WriteLine("\nChallenge 13:");
+            result &= challenge13();
+            Console.WriteLine("\nChallenge 14:");
+            result &= challenge14();
+            Console.WriteLine("\nChallenge 15:");
+            result &= challenge15();
+            Console.WriteLine("\nChallenge 16:");
+            result &= challenge16();
+
+            return result;
+        }
+
+        // Modify a CBC encrypted cookie
         static bool challenge16() {
             // The goal again is to modify the (AES-123 CBC encrypted) cookie and slip an admin=true inside
-            // Input:  ?
+            // Input:   Number of bytes in the cookie string before our content: 8+1+13+1+8+1 = 32 bytes prepending data (exactly 2 blocks, easy for us)
+            //          Number of bytes for the "&admin=true" string: 1+5+1+4 = 11 bytes
 
-            return false;
+            // Plan: insert some random userdata (1 block) and then insert the &admin=true, but without the = and & signs.
+            // Then afterwards we modify the ciphertext of the first block of 'userdata' so that the = and & signs will be XOR-ed in.
+            string userdata = "---4---8---4---8" + "_admin_true";
+            byte[] cipher = encryptionOracle16(Helpers.FromUTF8String(userdata));
+
+            byte[] xors = new byte[cipher.Length];
+            byte _ = Helpers.FromUTF8String("_")[0];
+            byte and = Helpers.FromUTF8String("&")[0];
+            byte eq = Helpers.FromUTF8String("=")[0];
+            xors[33] = (byte)(_ ^ and);
+            xors[39] = (byte)(_ ^ eq);
+
+            cipher = Helpers.XOR(cipher, xors);
+
+            return decryptionOracle16(cipher);
         }
 
         static byte[] encryptionOracle16(byte[] input) {
@@ -450,6 +492,8 @@ namespace CryptoPals
                     throw new Exception("Bad padding.");
             return paddingLength;
         }
+
+        #endregion
 
         #region Set 1
 

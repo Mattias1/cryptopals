@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 
 namespace CryptoPals
@@ -12,11 +13,103 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge16();
+            bool result = challenge17();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Decrypt a random CBC encrypted string, using a CBC padding oracle
+        static bool challenge17() {
+            int blocksize = 16;
+            // The idea is to tamper the ciphertext in the following way:
+            // - xor out the guessed byte (only if guessed right of course) and then xor in the new padding (say, 0x01).
+            // - Check it's padding; if that padding is valid: then the last byte is, with high probability, 0x01, 
+            //   so our guess was right and we know a byte of the input.
+
+            // Get the encrypted string we want to decrypt
+            BlockCipherResult original = encryptionOracle17();
+            byte[] answer = new byte[original.Cipher.Length];
+            Console.Write("Cipher hex:   ");
+            Helpers.PrintHexString(original.Cipher);
+
+            for (int index = answer.Length - 1; index >= 0; index--) {
+                // Setup for breaking the index-th byte
+                int paddingbyte = blocksize - (index % blocksize);
+                byte[] cipher = Helpers.CopyPartOf(original.Cipher, 0, Helpers.ClosestMultipleHigher(index + 1, blocksize));
+                byte[] iv = Helpers.Copy(original.Iv);
+
+                // Set the bytes after the padding bytes
+                if (index >= blocksize) {
+                    for (int i = 1; i < paddingbyte; i++)
+                        cipher[index + i - blocksize] = (byte)(original.Cipher[index + i - blocksize] ^ answer[index + i] ^ paddingbyte);
+                }
+                else {
+                    for (int i = 1; i < paddingbyte; i++)
+                        iv[index + i] = (byte)(original.Iv[index + i] ^ answer[index + i] ^ paddingbyte);
+                }
+
+                // Decrypt the index-th byte
+                for (int b = 0; b < 256; b++) {
+                    // To tamper the current block's plain, change the byte in the previous block's cipher (or iv)
+                    if (index >= blocksize)
+                        cipher[index - blocksize] = (byte)(original.Cipher[index - blocksize] ^ b ^ paddingbyte);
+                    else
+                        iv[index] = (byte)(original.Iv[index] ^ b ^ paddingbyte);
+                    bool validPadding = paddingOracle17(cipher, iv);
+
+                    // If the padding is valid, it's either the paddingbyte itself or the solution; save it.
+                    if (validPadding) {
+                        answer[index] = (byte)b;
+
+                        if (b != paddingbyte)
+                            break;
+                    }
+                }
+            }
+
+            Console.Write("Answer hex:   ");
+            Helpers.PrintHexString(answer);
+            Console.Write("Answer UTF-8: ");
+            Helpers.PrintUTF8String(unPKCS7(answer));
+
+            return Helpers.Equals(Convert.FromBase64String("MDAw"), Helpers.CopyPartOf(answer, 0, 3));
+        }
+
+        static BlockCipherResult encryptionOracle17() {
+            int blocksize = 16;
+
+            // Pick one of these strings (at random)
+            string[] sources = new string[] {
+                "MDAwMDAwTm93IHRoYXQgdGhlIHBhcnR5IGlzIGp1bXBpbmc=",
+                "MDAwMDAxV2l0aCB0aGUgYmFzcyBraWNrZWQgaW4gYW5kIHRoZSBWZWdhJ3MgYXJlIHB1bXBpbic=",
+                "MDAwMDAyUXVpY2sgdG8gdGhlIHBvaW50LCB0byB0aGUgcG9pbnQsIG5vIGZha2luZw==",
+                "MDAwMDAzQ29va2luZyBNQydzIGxpa2UgYSBwb3VuZCBvZiBiYWNvbg==",
+                "MDAwMDA0QnVybmluZyAnZW0sIGlmIHlvdSBhaW4ndCBxdWljayBhbmQgbmltYmxl",
+                "MDAwMDA1SSBnbyBjcmF6eSB3aGVuIEkgaGVhciBhIGN5bWJhbA==",
+                "MDAwMDA2QW5kIGEgaGlnaCBoYXQgd2l0aCBhIHNvdXBlZCB1cCB0ZW1wbw==",
+                "MDAwMDA3SSdtIG9uIGEgcm9sbCwgaXQncyB0aW1lIHRvIGdvIHNvbG8=",
+                "MDAwMDA4b2xsaW4nIGluIG15IGZpdmUgcG9pbnQgb2g=",
+                "MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93"
+            };
+            byte[] plain = Convert.FromBase64String(sources[Helpers.Random.Next(10)]);
+
+            // Generate a random (so unknown) key and use it throughout the rest of the program
+            if (fixedKey == null)
+                fixedKey = Helpers.RandomByteArray(blocksize);
+
+            // Generate a random iv and encrypt the chosen plaintext
+            byte[] iv = Helpers.RandomByteArray(blocksize);
+            byte[] cipher = BlockCipher.EncryptAES(plain, fixedKey, iv, CipherMode.CBC, PaddingMode.PKCS7);
+
+            return BlockCipher.Result(cipher, iv);
+        }
+
+        static bool paddingOracle17(byte[] cipher, byte[] iv) {
+            // Return true or false depending on whether or not the padding is correct
+            byte[] plain = BlockCipher.DecryptAES(cipher, fixedKey, iv, CipherMode.CBC, PaddingMode.None);
+            return checkPKCS7(plain);
         }
 
         #region Set 2
@@ -73,10 +166,8 @@ namespace CryptoPals
             int blocksize = 16;
 
             // Generate a random (so unknown) key and use it throughout the rest of the program
-            if (fixedKey == null) {
-                fixedKey = new byte[blocksize];
-                Helpers.Random.NextBytes(fixedKey);
-            }
+            if (fixedKey == null)
+                fixedKey = Helpers.RandomByteArray(blocksize);
 
             // Generate cookie and encrypt it
             string userData = Helpers.ToUTF8String(input);
@@ -107,20 +198,15 @@ namespace CryptoPals
             string result = Helpers.ToUTF8String(unPKCS7(Helpers.FromUTF8String("ICE ICE BABY\x04\x04\x04\x04")));
             Console.WriteLine(result);
 
-            try {
-                unPKCS7(Helpers.FromUTF8String("ICE ICE BABY\x05\x05\x05\x05"));
-            }
-            catch (Exception e) {
+            if (!checkPKCS7(Helpers.FromUTF8String("ICE ICE BABY\x05\x05\x05\x05"))) {
                 exception1 = true;
-                Console.WriteLine(e.Message);
+                Console.WriteLine("Bad padding");
             }
 
-            try {
-                unPKCS7(Helpers.FromUTF8String("ICE ICE BABY\x01\x02\x03\x04"));
-            }
-            catch (Exception e) {
+            if (!checkPKCS7(Helpers.FromUTF8String("ICE ICE BABY\x01\x02\x03\x04"))) ;
+            {
                 exception2 = true;
-                Console.WriteLine(e.Message);
+                Console.WriteLine("Bad padding");
             }
 
             return result == "ICE ICE BABY" && exception1 && exception2;
@@ -172,7 +258,7 @@ namespace CryptoPals
             byte[] result = new byte[messageLength - totalPrefixLength + inversePrefixLength];
             byte[][] lookupTable;
             for (int hackPosition = 0; hackPosition < result.Length; hackPosition++) { // The (position of the) byte we are going to decrypt
-                // Build the lookup table
+                                                                                       // Build the lookup table
                 lookupTable = new byte[256][];
                 for (int b = 0; b < 256; b++) {
                     // Recreate the input for the current block to analyze
@@ -206,10 +292,8 @@ namespace CryptoPals
 
             // Generate a random (so unknown) key and use it throughout the rest of the program
             if (fixedKey == null) {
-                fixedKey = new byte[blocksize];
-                Helpers.Random.NextBytes(fixedKey);
-                fixedBytes = new byte[Helpers.Random.Next(5, 55)];
-                Helpers.Random.NextBytes(fixedBytes);
+                fixedKey = Helpers.RandomByteArray(blocksize);
+                fixedBytes = Helpers.RandomByteArray(Helpers.Random.Next(5, 55));
             }
 
             // The plaintext to encrypt will be [random_prefix + input + secret message] (the secret message that we want to decrypt)
@@ -269,8 +353,7 @@ namespace CryptoPals
 
             // Generate a random (so unknown) key and use it throughout the rest of the program
             if (fixedKey == null) {
-                fixedKey = new byte[blocksize];
-                Helpers.Random.NextBytes(fixedKey);
+                fixedKey = Helpers.RandomByteArray(blocksize);
             }
 
             // Generate cookie and encrypt it
@@ -299,7 +382,7 @@ namespace CryptoPals
             byte[] cipher, input;
             byte[][] lookupTable;
             for (int hackPosition = 0; hackPosition < result.Length; hackPosition++) { // The (position of the) byte we are going to decrypt
-                // Build the lookup table
+                                                                                       // Build the lookup table
                 lookupTable = new byte[256][];
                 for (int b = 0; b < 256; b++) {
                     // Recreate the input for the current block to analyze
@@ -347,10 +430,8 @@ namespace CryptoPals
             int blocksize = 16;
 
             // Generate a random (so unknown) key and use it throughout the rest of the program
-            if (fixedKey == null) {
-                fixedKey = new byte[blocksize];
-                Helpers.Random.NextBytes(fixedKey);
-            }
+            if (fixedKey == null)
+                fixedKey = Helpers.RandomByteArray(blocksize);
 
             // The plaintext to encrypt will be [input + secret message] (the secret message that we want to decrypt)
             byte[] secretMessage = Convert.FromBase64String(
@@ -396,15 +477,10 @@ namespace CryptoPals
             // This function takes an input and encrypts it randomly with ECB or CBC. It also adds random bytes before and after the input array.
 
             // Initialize
-            byte[] key = new byte[16];
-            byte[] before = new byte[Helpers.Random.Next(5, 11)];
-            byte[] after = new byte[Helpers.Random.Next(5, 11)];
+            byte[] key = Helpers.RandomByteArray(16);
+            byte[] before = Helpers.RandomByteArray(Helpers.Random.Next(5, 11));
+            byte[] after = Helpers.RandomByteArray(Helpers.Random.Next(5, 11));
             byte[] iv = null;
-
-            // Generate content
-            Helpers.Random.NextBytes(key);
-            Helpers.Random.NextBytes(before);
-            Helpers.Random.NextBytes(after);
 
             // Create the result array with the original and generated input
             byte[] result = Helpers.Concatenate(before, key, after);
@@ -418,8 +494,7 @@ namespace CryptoPals
             else {
                 // CBC
                 Console.WriteLine("The encryption oracle secretly used CBC mode... ");
-                iv = new byte[key.Length];
-                Helpers.Random.NextBytes(iv);
+                iv = Helpers.RandomByteArray(key.Length);
                 result = BlockCipher.EncryptAES(result, key, iv, CipherMode.CBC, PaddingMode.PKCS7);
             }
             return result;
@@ -474,23 +549,26 @@ namespace CryptoPals
         }
         static byte[] unPKCS7(byte[] raw, int blocksize = 16) {
             // Remove PKCS#7 padding. Note that the .NET AES doesn't really unpad, it just replaces them with zeroes.
-            int paddingLength = checkPKCS7(raw);
+            int paddingLength = getPKCS7(raw);
             return Helpers.CopyPartOf(raw, 0, raw.Length - paddingLength);
         }
         static byte[] zeroPKCS7(byte[] raw, int blocksize = 16) {
             // Remove PKCS#7 padding. This time, overwrite the padding with zeroes, just like the .NET AES.
-            int paddingLength = checkPKCS7(raw);
+            int paddingLength = getPKCS7(raw);
             byte[] result = new byte[raw.Length];
             Array.Copy(raw, 0, result, 0, raw.Length - paddingLength);
             return result;
         }
-        static int checkPKCS7(byte[] raw) {
+        static int getPKCS7(byte[] raw) {
             // Check whether or not the raw array is a properly PKCS7-padded. Throw when it's not.
-            int paddingLength = raw[raw.Length - 1];
+            int paddingLength = raw.Last();
             for (int i = 0; i < paddingLength; i++)
                 if (raw[raw.Length - i - 1] != paddingLength)
-                    throw new Exception("Bad padding.");
+                    return -1;
             return paddingLength;
+        }
+        static bool checkPKCS7(byte[] raw) {
+            return getPKCS7(raw) > 0;
         }
 
         #endregion

@@ -64,5 +64,21 @@ namespace CryptoPals
             }
             return result;
         }
+
+
+        public static BlockCipherResult Result(byte[] cipher, byte[] iv) {
+            return new BlockCipherResult(cipher, iv);
+        }
+    }
+
+    public class BlockCipherResult
+    {
+        public BlockCipherResult(byte[] cipher, byte[] iv) {
+            this.Cipher = cipher;
+            this.Iv = iv;
+        }
+
+        public byte[] Cipher;
+        public byte[] Iv;
     }
 }

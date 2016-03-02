@@ -16,6 +16,12 @@ namespace CryptoPals
             }
         }
 
+        public static byte[] RandomByteArray(int length) {
+            byte[] result = new byte[length];
+            Helpers.Random.NextBytes(result);
+            return result;
+        }
+
         // Encodings
         /// <summary>
         /// Convert a string with hexadecimal digits [0..9, A..F]* to a byte array.
@@ -112,6 +118,17 @@ namespace CryptoPals
         }
 
         // Byte array manipulations
+        /// <summary>
+        /// Copy a full byte array
+        /// </summary>
+        /// <param name="raw"></param>
+        /// <returns></returns>
+        public static byte[] Copy(byte[] raw) {
+            byte[] result = new byte[raw.Length];
+            Array.Copy(raw, result, raw.Length);
+            return result;
+        }
+
         /// <summary>
         /// Copy a part of the raw array
         /// </summary>
@@ -213,7 +230,6 @@ namespace CryptoPals
             return result;
         }
 
-        // Misc
         /// <summary>
         /// X-OR a message with a key (repeated if shorter than message)
         /// </summary>
@@ -227,6 +243,18 @@ namespace CryptoPals
             return result;
         }
 
+        /// <summary>
+        /// XOR an array in place at a specific position with a specific byte
+        /// </summary>
+        /// <param name="raw"></param>
+        /// <param name="index"></param>
+        /// <param name="xorWith"></param>
+        public static byte[] XorAt(byte[] raw, int index, int xorWith) {
+            raw[index] = (byte)(raw[index] ^ xorWith);
+            return raw;
+        }
+
+        // Misc
         /// <summary>
         /// Return whether or not two byte arrays are equal (in content, not (nescessarily) memory address)
         /// </summary>
@@ -272,6 +300,28 @@ namespace CryptoPals
         /// <returns></returns>
         public static bool QuickCheck(byte[] result, int totalLength, string begin) {
             return result.Length == totalLength && Helpers.ToUTF8String(Helpers.CopyPartOf(result, 0, begin.Length)) == begin;
+        }
+
+        /// <summary>
+        /// Get the closest multiple of the divisor greater or equal to the count
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="divisor"></param>
+        /// <returns></returns>
+        public static int ClosestMultipleHigher(int count, int divisor) {
+            int difference = count % divisor;
+            if (difference == 0)
+                return count;
+            return count + divisor - difference;
+        }
+        /// <summary>
+        /// Get the closest multiple of the divisor smaller or equal to the count
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="divisor"></param>
+        /// <returns></returns>
+        public static int ClosestMultipleLower(int count, int divisor) {
+            return count - count % divisor;
         }
     }
 }

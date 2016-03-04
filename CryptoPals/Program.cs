@@ -510,22 +510,51 @@ namespace CryptoPals
             byte[] key = Helpers.FromUTF8String("YELLOW SUBMARINE");
             byte[] iv = new byte[key.Length];
 
-            // byte[] result = BlockCipher.Decrypt<AesManaged>(input, key, iv, CipherMode.CBC); // HAX! CHEAT!
-            int blocksize = 16;
-            byte[] result = new byte[input.Length];
-            byte[] block = iv, prevBlock = iv;
-            for (int i = 0; i < input.Length; i += blocksize) {
-                block = Helpers.CopyPartOf(input, i, blocksize);
-                block = BlockCipher.DecryptAES(block, key, null, CipherMode.ECB, PaddingMode.None);
-                block = Helpers.XOR(block, prevBlock);
-                prevBlock = Helpers.CopyPartOf(input, i, blocksize);
-                Array.Copy(block, 0, result, i, blocksize);
-            }
-            result = zeroPKCS7(result);
-            Helpers.PrintUTF8String(result);
+            byte[] result = decryptAesCbc(input, iv, key);
+            byte[] backToInput = encryptAesCbc(result, key, iv).Cipher;
+            Helpers.PrintUTF8String(unPKCS7(result));
 
             // How original, the content is the same as for challenge 7 and 6
-            return Helpers.QuickCheck(result, 2880, "I'm back and I'm ringin' the bell");
+            return Helpers.QuickCheck(result, 2880, "I'm back and I'm ringin' the bell")
+                && Helpers.Equals(backToInput, input);
+        }
+
+        private static BlockCipherResult encryptAesCbc(byte[] plain, byte[] key, byte[] iv = null) {
+            const int blocksize = 16;
+            if (iv == null)
+                iv = Helpers.RandomByteArray(16);
+            byte[] cipher = new byte[plain.Length];
+
+            byte[] prevBlock = iv;
+            for (int i = 0; i < plain.Length; i += blocksize)
+            {
+                byte[] block = Helpers.CopyPartOf(plain, i, blocksize);
+                block = Helpers.XOR(block, prevBlock);
+                block = BlockCipher.EncryptAES(block, key, null, CipherMode.ECB, PaddingMode.None);
+                prevBlock = block;
+                Array.Copy(block, 0, cipher, i, blocksize);
+            }
+
+            return BlockCipher.Result(cipher, iv);
+        }
+
+        private static byte[] decryptAesCbc(BlockCipherResult cipherAndIv, byte[] key) {
+            return decryptAesCbc(cipherAndIv.Cipher, cipherAndIv.Iv, key);
+        }
+        private static byte[] decryptAesCbc(byte[] cipher, byte[] iv, byte[] key) {
+            const int blocksize = 16;
+            byte[] plain = new byte[cipher.Length];
+
+            byte[] prevBlock = iv;
+            for (int i = 0; i < cipher.Length; i += blocksize) {
+                byte[] block = Helpers.CopyPartOf(cipher, i, blocksize);
+                block = BlockCipher.DecryptAES(block, key, null, CipherMode.ECB, PaddingMode.None);
+                block = Helpers.XOR(block, prevBlock);
+                prevBlock = Helpers.CopyPartOf(cipher, i, blocksize);
+                Array.Copy(block, 0, plain, i, blocksize);
+            }
+
+            return plain;
         }
 
         // Implement PKCS#7 padding
@@ -547,12 +576,12 @@ namespace CryptoPals
             // Add PKCS#7 padding
             return Helpers.ForcePadWith(raw, blocksize, (byte)(blocksize - raw.Length % blocksize));
         }
-        static byte[] unPKCS7(byte[] raw, int blocksize = 16) {
+        static byte[] unPKCS7(byte[] raw) {
             // Remove PKCS#7 padding. Note that the .NET AES doesn't really unpad, it just replaces them with zeroes.
             int paddingLength = getPKCS7(raw);
             return Helpers.CopyPartOf(raw, 0, raw.Length - paddingLength);
         }
-        static byte[] zeroPKCS7(byte[] raw, int blocksize = 16) {
+        static byte[] zeroPKCS7(byte[] raw) {
             // Remove PKCS#7 padding. This time, overwrite the padding with zeroes, just like the .NET AES.
             int paddingLength = getPKCS7(raw);
             byte[] result = new byte[raw.Length];

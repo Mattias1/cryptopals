@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace CryptoPals
@@ -8,8 +9,10 @@ namespace CryptoPals
     {
         // Random
         private static Random random;
-        public static Random Random {
-            get {
+        public static Random Random
+        {
+            get
+            {
                 if (random == null)
                     random = new Random();
                 return random;
@@ -117,6 +120,22 @@ namespace CryptoPals
             return Convert.FromBase64String(file);
         }
 
+        /// <summary>
+        /// Get the bytes of a number in little endian format
+        /// </summary>
+        /// <param name="number"></param>
+        /// <returns></returns>
+        public static byte[] LittleEndian(ulong number) {
+            int nrOfBytes = sizeof(ulong);
+            byte[] result = new byte[nrOfBytes];
+
+            const ulong fullByte = 0xFF;
+            for (int i = 0; i < nrOfBytes; i++)
+                result[i] = (byte)(number & fullByte >> (i * 8));
+
+            return result;
+        }
+
         // Byte array manipulations
         /// <summary>
         /// Copy a full byte array
@@ -148,13 +167,11 @@ namespace CryptoPals
         /// <summary>
         /// Concatenate all given raw arrays into one byte array
         /// </summary>
-        /// <param name="raws"></param>
+        /// <param name="arrays"></param>
         /// <returns></returns>
         public static byte[] Concatenate(params byte[][] arrays) {
             // Create an array with the correct length
-            int length = 0;
-            foreach (byte[] raw in arrays)
-                length += raw.Length;
+            int length = arrays.Sum(raw => raw.Length);
             byte[] result = new byte[length];
             // Fill it
             int index = 0;

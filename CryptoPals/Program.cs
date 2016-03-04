@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace CryptoPals
 {
@@ -13,11 +14,52 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge17();
+            bool result = challenge18();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Implement CTR mode of AES
+        static bool challenge18() {
+            int blocksize = 16;
+            byte[] input = Convert.FromBase64String("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==");
+            byte[] key = Helpers.FromUTF8String("YELLOW SUBMARINE");
+            ulong nonce = 0;
+
+            byte[] result = encryptOrDecryptAesCtr(input, key, nonce);
+            byte[] backToInput = encryptOrDecryptAesCtr(result, key, nonce);
+
+            string test = Helpers.ToUTF8String(unPKCS7(result));
+            Helpers.PrintUTF8String(unPKCS7(result));
+
+            return Helpers.QuickCheck(result, input.Length, "Yo, VIP Let's kick it Ice, Ice, baby Ice, Ice, baby")
+                && Helpers.Equals(input, backToInput);
+        }
+
+        static byte[] encryptOrDecryptAesCtr(byte[] input, byte[] key, ulong nonce) {
+            const int blocksize = 16;
+            const int halfBlocksize = blocksize / 2;
+            byte[] result = new byte[input.Length];
+            ulong counter = 0;
+
+            for (int i = 0; i < input.Length; i += blocksize) {
+                byte[] block = Helpers.CopyPartOf(input, i, blocksize);
+
+                byte[] nonceAndCounter = new byte[blocksize];
+                Array.Copy(Helpers.LittleEndian(nonce), nonceAndCounter, halfBlocksize);
+                Array.Copy(Helpers.LittleEndian(counter), 0, nonceAndCounter, halfBlocksize, halfBlocksize);
+
+                byte[] keystream = BlockCipher.EncryptAES(nonceAndCounter, key, null, CipherMode.ECB, PaddingMode.None);
+
+                block = Helpers.XOR(block, keystream);
+                Array.Copy(block, 0, result, i, Math.Min(result.Length - i, blocksize));
+
+                counter++;
+            }
+
+            return result;
         }
 
         // Decrypt a random CBC encrypted string, using a CBC padding oracle
@@ -526,8 +568,7 @@ namespace CryptoPals
             byte[] cipher = new byte[plain.Length];
 
             byte[] prevBlock = iv;
-            for (int i = 0; i < plain.Length; i += blocksize)
-            {
+            for (int i = 0; i < plain.Length; i += blocksize) {
                 byte[] block = Helpers.CopyPartOf(plain, i, blocksize);
                 block = Helpers.XOR(block, prevBlock);
                 block = BlockCipher.EncryptAES(block, key, null, CipherMode.ECB, PaddingMode.None);

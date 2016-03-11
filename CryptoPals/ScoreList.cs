@@ -15,15 +15,11 @@ namespace CryptoPals
             set { this.KeyUsed = BitConverter.GetBytes(value); }
         }
 
-        public string Base64String {
-            get { return Convert.ToBase64String(this.Source); }
-        }
-        public string HexString {
-            get { return Helpers.ToHexString(this.Source); }
-        }
-        public string UTF8String {
-            get { return Helpers.ToUTF8String(this.Source); }
-        }
+        public string Base64String => Convert.ToBase64String(this.Source);
+
+        public string HexString => Helpers.ToHexString(this.Source);
+
+        public string Utf8String => Helpers.ToUTF8String(this.Source);
 
         // Methods for automatic frequency analysis
         /// <summary>
@@ -34,7 +30,7 @@ namespace CryptoPals
         /// <returns></returns>
         public static ScoreItem DoFrequencyAnalysis(byte[] raw, byte[] keyUsed) {
             ScoreItem current = new ScoreItem(raw);
-            current.Score = ScoreItem.FrequencyScore(current.UTF8String);
+            current.Score = ScoreItem.FrequencyScore(current.Utf8String);
             current.KeyUsed = keyUsed;
             return current;
         }
@@ -84,7 +80,7 @@ namespace CryptoPals
         /// <param name="displaySource">Whether or not to display the source array (as a UTF-8 string)</param>
         /// <returns></returns>
         public string ToString(bool displaySource) {
-            return (displaySource ? ("Source: " + this.UTF8String + ", ") : "") + "Key: " + Helpers.ToHexString(this.KeyUsed, true) + ", Score: " + this.Score.ToString();
+            return (displaySource ? ("Source: " + this.Utf8String + ", ") : "") + "Key: " + Helpers.ToHexString(this.KeyUsed, true) + ", Score: " + this.Score.ToString();
         }
         public override string ToString() {
             return this.ToString(true);

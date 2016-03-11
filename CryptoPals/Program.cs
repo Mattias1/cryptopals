@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace CryptoPals
 {
@@ -14,11 +14,72 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge18();
+            bool result = challenge19();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Break fixed nonce CTR using frequency analysis
+        static bool challenge19() {
+            // Helpers.PrintAsciiTable();
+
+            List<byte[]> ciphers = encrypt19();
+            byte[] keystreamSoFar = Helpers.FromHexString(
+                "0x4838344276FE8B4E949618FE4EBF52F5A2AE678AA250F263A52DCD2688671E2D955373197343"
+            );
+
+            // Determine the size of the keystream we want to crack
+            int keystreamSize = 38;
+            keystreamSize = Math.Max(keystreamSize, keystreamSoFar.Length);
+            var longCiphers = ciphers.Where(c => c.Length >= keystreamSize).ToList();
+
+            // Merge them into one gigantic array and give them to the repeating XOR attacker from challenge 6
+            var temp = new List<byte>();
+            foreach (byte[] cipher in longCiphers)
+                temp.AddRange(Helpers.CopyPartOf(cipher, 0, keystreamSize));
+            byte[] merged = temp.ToArray();
+
+            byte[] keystream = attackRepeatingXOR(merged, keystreamSize, keystreamSoFar);
+
+            // Print the results for this key
+            Console.WriteLine("Keystream size: {0} (max: {1}), #ciphers left: {2}",
+                keystreamSize, ciphers.Max(c => c.Length), longCiphers.Count);
+            Helpers.PrintHexString(keystream);
+            Console.WriteLine();
+
+            // foreach (var cipher in longCiphers.Take(10)) {
+            //     byte[] part = Helpers.CopyPartOf(cipher, 0, keystreamSize);
+            //     Helpers.PrintUTF8String(Helpers.XOR(part, keystream));
+            // }
+
+            // Now I'm done, let's print all the strings
+            Console.WriteLine("\n\nAll decrypted strings:\n");
+            foreach (var c in ciphers)
+                Helpers.PrintUTF8String(Helpers.XOR(c, keystreamSoFar));
+
+            return Helpers.Equals(
+                Helpers.FromHexString("0x4838344276FE8B4E949618FE4EBF52F5A2AE678AA250F263A52DCD2688671E2D955373197343"),
+                keystream
+            );
+        }
+
+        static List<byte[]> encrypt19() {
+            const int blocksize = 16;
+            fixedKey = Helpers.FromHexString("0x6CA0AF24369C8531BE2C7AE3AB8DBEA4"); // Randomly generated, but fixed
+            ulong nonce = 0;
+
+            List<byte[]> result = new List<byte[]>(40);
+            using (StreamReader reader = new StreamReader("Data/19.txt")) {
+                string line;
+                while ((line = reader.ReadLine()) != null) {
+                    byte[] raw = Convert.FromBase64String(line);
+                    raw = encryptOrDecryptAesCtr(raw, fixedKey, nonce);
+                    result.Add(raw);
+                }
+            }
+            return result;
         }
 
         // Implement CTR mode of AES
@@ -754,26 +815,31 @@ namespace CryptoPals
             Console.WriteLine();
 
             // Attack the Vigenere cipher, because we are not 100% sure on the keysize, try each of the most likely ones
-            for (int i = 0; i < keysizeList.Length; i++) {
-                int keysize = keysizeList[i].KeyUsedInt;
-
-                // Analyze all the blocks that have the same key - attacking each transposed block will give us one byte of the key (using the single XOR attack)
-                byte[] key = new byte[keysize];
-                byte[][] transposed = Helpers.Transpose(Helpers.SplitUp(input, keysize));
-                for (int j = 0; j < transposed.Length; j++)
-                    key[j] = attackSingleXOR(transposed[j]);
+            foreach (ScoreItem si in keysizeList) {
+                int keysize = si.KeyUsedInt;
+                byte[] key = attackRepeatingXOR(input, keysize);
 
                 // Print the results for this key
                 string possibleMessage = Helpers.ToUTF8String(Helpers.XOR(input, key));
                 if (keysize == 29)
-                    Console.WriteLine("Keysize: " + keysize.ToString() + ", key: " + Helpers.ToHexString(key, true) + ", message: " + possibleMessage);
+                    Console.WriteLine("Keysize: {0}, key: {1}, message: {2}", keysize, Helpers.ToHexString(key, true), possibleMessage);
             }
 
             // Return true when one of the tried keysizes is 29 (0x1D)
-            for (int i = 0; i < keysizeList.Length; i++)
-                if (keysizeList[i].KeyUsedInt == 29)
-                    return true;
-            return false;
+            return keysizeList.Any(t => t.KeyUsedInt == 29);
+        }
+
+        static byte[] attackRepeatingXOR(byte[] input, int keysize, byte[] keySoFar = null) {
+            // Analyze all the blocks that have the same key - attacking each transposed block will give us one byte of the key (using the single XOR attack)
+            byte[] key = new byte[keysize];
+            if (keySoFar != null)
+                Array.Copy(keySoFar, key, keySoFar.Length);
+
+            byte[][] transposed = Helpers.Transpose(Helpers.SplitUp(input, keysize));
+            for (int j = keySoFar.Length; j < transposed.Length; j++)
+                key[j] = attackSingleXOR(transposed[j]);
+
+            return key;
         }
 
         // Encrypt a message using a repeating XOR
@@ -817,7 +883,7 @@ namespace CryptoPals
             // Display the best plain texts
             ScoreItem.DisplayScoreList(scoreList);
 
-            return scoreList[0].UTF8String == "Now that the party is jumping\n";
+            return scoreList[0].Utf8String == "Now that the party is jumping\n";
         }
 
         // Crack the message encrypted with a single XOR
@@ -836,7 +902,7 @@ namespace CryptoPals
             // Display the best plain texts
             ScoreItem.DisplayScoreList(scoreList);
 
-            return scoreList[0].UTF8String == "Cooking MC's like a pound of bacon";
+            return scoreList[0].Utf8String == "Cooking MC's like a pound of bacon";
         }
 
         static byte attackSingleXOR(byte[] input, ScoreItem[] scoreList) {

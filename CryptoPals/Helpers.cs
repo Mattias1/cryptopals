@@ -2,6 +2,8 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace CryptoPals
 {
@@ -9,15 +11,7 @@ namespace CryptoPals
     {
         // Random
         private static Random random;
-        public static Random Random
-        {
-            get
-            {
-                if (random == null)
-                    random = new Random();
-                return random;
-            }
-        }
+        public static Random Random => random ?? (random = new Random());
 
         public static byte[] RandomByteArray(int length) {
             byte[] result = new byte[length];
@@ -63,7 +57,7 @@ namespace CryptoPals
         public static string ToHexString(byte[] raw, bool add0x = false) {
             // Initialize
             char[] result = new char[raw.Length * 2];
-            string hex = "0123456789abcdef";
+            const string hex = "0123456789abcdef";
 
             // Fill the char array
             for (int i = 0; i < raw.Length; i++) {
@@ -76,6 +70,11 @@ namespace CryptoPals
             if (add0x)
                 final = "0x" + final.ToUpper();
             return final;
+        }
+
+        private static string toHexString(byte raw) {
+            const string hex = "0123456789abcdef";
+            return $"{hex[raw >> 4]}{hex[raw & 0x0f]}";
         }
 
         /// <summary>
@@ -116,8 +115,8 @@ namespace CryptoPals
         /// <param name="filename"></param>
         /// <returns></returns>
         public static byte[] ReadBase64File(string filename) {
-            string file = File.ReadAllText(filename).Replace("\n", "").Replace("\r", "");
-            return Convert.FromBase64String(file);
+            string fileContent = File.ReadAllText(filename).Replace("\n", "").Replace("\r", "");
+            return Convert.FromBase64String(fileContent);
         }
 
         /// <summary>
@@ -133,6 +132,41 @@ namespace CryptoPals
             for (int i = 0; i < nrOfBytes; i++)
                 result[i] = (byte)(number & fullByte >> (i * 8));
 
+            return result;
+        }
+
+        /// <summary>
+        /// Print (parts of) the ASCII table to the console
+        /// </summary>
+        public static string PrintAsciiTable(bool hex = true) {
+            string[] toPrint = {
+                "abcdefghijklm",
+                "nopqrstuvwxyz",
+                "ABCDEFGHIJKLM",
+                "NOPQRSTUVWXYZ",
+                "0123456789",
+                " !\"',.:?"
+            };
+            int pad = hex ? 2 : 3;
+            int length = toPrint.First().Length * (pad + 1) + 1;
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine("ASCII table:");
+            foreach (var chars in toPrint.Select(s => s.ToCharArray())) {
+                sb.AppendLine("".PadRight(length, '-'));
+                foreach (char c in chars)
+                    sb.Append(' ').Append(c.ToString().PadRight(pad, ' '));
+                sb.AppendLine();
+                foreach (byte c in chars.Select(c => (byte)c)) {
+                    string s = hex ? toHexString(c) : c.ToString();
+                    sb.Append(' ').Append(s.PadRight(pad, ' '));
+                }
+                sb.AppendLine();
+            }
+            sb.AppendLine("".PadRight(length, '-'));
+
+            string result = sb.ToString();
+            Console.WriteLine(result);
             return result;
         }
 
@@ -339,6 +373,28 @@ namespace CryptoPals
         /// <returns></returns>
         public static int ClosestMultipleLower(int count, int divisor) {
             return count - count % divisor;
+        }
+
+        /// <summary>
+        /// Save a string to clipboard
+        /// </summary>
+        /// <param name="s"></param>
+        public static bool ToClipboard(string s) {
+            try {
+                Clipboard.SetText(s);
+                return true;
+            }
+            catch (ThreadStateException) {
+                return false;
+            }
+        }
+        /// <summary>
+        /// Save a bytearray to clipoard in hex format
+        /// </summary>
+        /// <param name="raw"></param>
+        /// <param name="add0x"></param>
+        public static bool ToClipboard(byte[] raw, bool add0x = true) {
+            return ToClipboard(ToHexString(raw, add0x));
         }
     }
 }

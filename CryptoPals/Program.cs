@@ -14,14 +14,59 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge19();
+            bool result = challenge20();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
         }
 
-        // Break fixed nonce CTR using frequency analysis
+        // Break fixed nonce CTR statistically (frequency analysis)
+        static bool challenge20() {
+            // Get the input
+            List<byte[]> input = encrypt20();
+            int max = input.Max(c => c.Length);
+
+            // The manual adjustments array
+            var manualAdjustments = new byte[max];
+            manualAdjustments[0] = 1;
+
+            // Attack each byte of the keystream one by one, and use as many arrays in the input as possible for this keystream byte
+            var keystream = new byte[max];
+            for (int i = 0; i < max; i++) {
+                var scoreList = new ScoreItem[manualAdjustments[i] + 1];
+
+                byte[] merged = input.Where(c => c.Length > i).Select(c => c[i]).ToArray();
+                attackSingleXOR(merged, scoreList);
+
+                keystream[i] = scoreList.Last().KeyUsed.First();
+            }
+
+            // Print the result
+            foreach (byte[] cipher in input)
+                Helpers.PrintUTF8String(Helpers.XOR(cipher, keystream));
+
+            byte[] lastLine = Helpers.XOR(input.Last(), keystream);
+            return Helpers.QuickCheck(lastLine, 55, "And we outta here / Yo, what happened to peace? / Peace");
+        }
+
+        static List<byte[]> encrypt20() {
+            fixedKey = Helpers.FromHexString("0x41BDFD6EDEC769B61A7815447D9DB6F1"); // Randomly generated, but fixed
+            ulong nonce = 0;
+
+            List<byte[]> result = new List<byte[]>(40);
+            using (StreamReader reader = new StreamReader("Data/20.txt")) {
+                string line;
+                while ((line = reader.ReadLine()) != null) {
+                    byte[] raw = Convert.FromBase64String(line);
+                    raw = encryptOrDecryptAesCtr(raw, fixedKey, nonce);
+                    result.Add(raw);
+                }
+            }
+            return result;
+        }
+
+        // Break fixed nonce CTR using frequency analysis (and some substitutions)
         static bool challenge19() {
             // Helpers.PrintAsciiTable();
 
@@ -66,7 +111,6 @@ namespace CryptoPals
         }
 
         static List<byte[]> encrypt19() {
-            const int blocksize = 16;
             fixedKey = Helpers.FromHexString("0x6CA0AF24369C8531BE2C7AE3AB8DBEA4"); // Randomly generated, but fixed
             ulong nonce = 0;
 
@@ -867,7 +911,6 @@ namespace CryptoPals
             // Answer: -
 
             // Inits
-            byte[] key = new byte[1];
             ScoreItem[] scoreList = new ScoreItem[10];
 
             using (StreamReader reader = new StreamReader("Data/4.txt")) {

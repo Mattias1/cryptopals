@@ -312,12 +312,13 @@ namespace CryptoPals
         /// <param name="a"></param>
         /// <param name="b"></param>
         /// <returns></returns>
-        public static bool Equals(byte[] a, byte[] b) {
+        public static bool Equals<T>(T[] a, T[] b)
+                where T : IEquatable<T> {
             if (a.Length != b.Length)
                 return false;
 
             for (int i = 0; i < a.Length; i++)
-                if (a[i] != b[i])
+                if (!a[i].Equals(b[i]))
                     return false;
             return true;
         }

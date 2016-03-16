@@ -45,6 +45,7 @@
     <Compile Include="BlockCipher.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="KeyValuePairs.cs" />
+    <Compile Include="MersenneTwister.cs" />
     <Compile Include="ScoreList.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

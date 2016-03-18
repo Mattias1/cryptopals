@@ -397,5 +397,32 @@ namespace CryptoPals
         public static bool ToClipboard(byte[] raw, bool add0x = true) {
             return ToClipboard(ToHexString(raw, add0x));
         }
+
+        /// <summary>
+        /// The amount of seconds sinds 1 Jan 1970 for time t
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        public static int UnixTime(DateTime? t = null)
+        {
+            return (int) UnixTimeD(t);
+        }
+        /// <summary>
+        /// The amount of seconds sinds 1 Jan 1970 for time t
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        public static uint UnixTimeU(DateTime? t = null) {
+            return (uint)UnixTimeD(t);
+        }
+        /// <summary>
+        /// The amount of seconds sinds 1 Jan 1970 for time t
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        public static double UnixTimeD(DateTime? t = null)
+        {
+            return (t ?? DateTime.Now).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+        }
     }
 }

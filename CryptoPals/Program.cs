@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading;
 
 namespace CryptoPals
 {
@@ -14,11 +15,48 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge21();
+            bool result = challenge22();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Crack an MT19937 seeded on current timestamp
+        static bool challenge22() {
+            // Send the request (and measure the begin and end times)
+            Console.WriteLine("Sending the 'request'...");
+            uint startTimestamp = Helpers.UnixTimeU();
+            uint randomNumber = getRandom22();
+            uint finishTimestamp = Helpers.UnixTimeU();
+            Console.WriteLine("Analyzing...\n");
+
+            // Crack the seed
+            var seeds = new List<uint>();
+            for (uint s = startTimestamp; s <= finishTimestamp; s++) {
+                uint trial = new MersenneTwister(s).Next();
+                if (trial == randomNumber)
+                    seeds.Add(s);
+            }
+
+            // Display the found seeds
+            foreach (uint seed in seeds)
+                Console.WriteLine("Seed: {0}", seed);
+
+            return seeds.Count > 0;
+        }
+
+        static uint getRandom22(bool hardMode = true) {
+            // Fake a web request - such a thing costs time...
+            const int min = 40;
+            const int max = 1000;
+            int factor = hardMode ? 1000 : 1;
+
+            Thread.Sleep(Helpers.Random.Next(min * factor, max * factor));
+            MersenneTwister mt = new MersenneTwister(Helpers.UnixTimeU());
+            Thread.Sleep(Helpers.Random.Next(min * factor, max * factor));
+
+            return mt.Next();
         }
 
         // Implement the mersenne twister (MT19937)

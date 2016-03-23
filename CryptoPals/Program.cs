@@ -15,11 +15,33 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge22();
+            bool result = challenge23();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Clone a MT19937 RNG from its output
+        static bool challenge23() {
+            // The 'original' RNG
+            MersenneTwister mt = new MersenneTwister(Helpers.UnixTimeU()); // secret enough xD
+
+            // Get the state
+            var state = new uint[624];
+            for (int i = 0; i < state.Length; i++)
+                state[i] = MersenneTwister.Untemper(mt.Next());
+
+            // Clone a new RNG
+            MersenneTwister clonedMt = new MersenneTwister(state);
+
+            // Output
+            uint nextCloned = clonedMt.Next();
+            uint nextOriginal = mt.Next();
+            Console.WriteLine("Predicted next random number: {0}", Helpers.ToBitString(nextCloned));
+            Console.WriteLine("Next random number:           {0}", Helpers.ToBitString(nextOriginal));
+
+            return nextOriginal == nextCloned;
         }
 
         // Crack an MT19937 seeded on current timestamp

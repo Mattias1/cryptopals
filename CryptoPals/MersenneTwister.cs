@@ -38,6 +38,15 @@ namespace CryptoPals
             for (uint i = 1; i < n; i++)
                 this.state[i] = f * (this.state[i - 1] ^ (this.state[i - 1] >> (w - 2))) + i;
         }
+        /// <summary>
+        /// Clone from a mersenne twister state
+        /// </summary>
+        /// <param name="state"></param>
+        public MersenneTwister(uint[] state)
+        {
+            this.index = n;
+            this.state = state;
+        }
 
         /// <summary>
         /// Extract the next 32 bits
@@ -68,6 +77,62 @@ namespace CryptoPals
                 this.state[i] = this.state[(i + m) % n] ^ xA;
             }
             this.index = 0;
+        }
+
+        /// <summary>
+        /// Untemper an extracted value
+        /// </summary>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        public static uint Untemper(uint y) {
+            y = untemperRightShift(y, l);
+            y = untemperLeftShift(y, c, t);
+            y = untemperLeftShift(y, b, s);
+            y = untemperRightShift(y, u);
+
+            return y;
+        }
+        
+        static uint untemperRightShift(uint y, int bitsShifted) {
+            if (bitsShifted <= 0)
+                throw new Exception("The untemperRightShift method expects the # bits shifted to be at least 1");
+            const int size = 32;
+            uint result = 0;
+
+            // The idea: we know that the bits are shifted x to the right, so the x left most bits we receive are correct
+            uint mask = 1u << (size - 1);
+            for (int i = 0; i < bitsShifted; i++) {
+                result |= y & mask;
+                mask >>= 1;
+            }
+
+            // Then, since we know what the next bit from the left is xored with, we know what it must be
+            while (mask != 0) {
+                result |= ((result >> bitsShifted) ^ y) & mask;
+                mask >>= 1;
+            }
+
+            return result;
+        }
+        static uint untemperLeftShift(uint y, uint magicNumber, int bitsShifted) {
+            if (bitsShifted <= 0)
+                throw new Exception("The untemperLeftShift method expects the # bits shifted to be at least 1");
+            uint result = 0;
+
+            // The idea: we know that the bits are shifted x to the left, so the x right most bits we receive are correct
+            uint mask = 1;
+            for (int i = 0; i < bitsShifted; i++) {
+                result |= y & mask;
+                mask <<= 1;
+            }
+
+            // Then, since we know what the next bit from the right is xored with, we know what it must be
+            while (mask != 0) {
+                result |= (((result << bitsShifted) & magicNumber) ^ y) & mask;
+                mask <<= 1;
+            }
+
+            return result;
         }
     }
 }

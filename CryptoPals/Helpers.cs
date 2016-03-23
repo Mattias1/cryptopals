@@ -78,6 +78,21 @@ namespace CryptoPals
         }
 
         /// <summary>
+        /// Convert a raw set of bits (uing) to bitstring (string)
+        /// </summary>
+        /// <param name="raw"></param>
+        /// <param name="add0b"></param>
+        /// <returns></returns>
+        public static string ToBitString(uint raw, bool add0b = true) {
+            int size = raw < 0x100 ? 8 : 32;
+            char[] result = new char[size];
+            for (int i = 0; i <size; i++)
+                result[i] = (raw & (1u << size - i - 1)) != 0 ? '1' : '0';
+
+            return (add0b ? "0b" : "") + new string(result);
+        }
+
+        /// <summary>
         /// Convert a normal UTF-8 string into a byte array
         /// </summary>
         /// <param name="message"></param>
@@ -403,9 +418,8 @@ namespace CryptoPals
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
-        public static int UnixTime(DateTime? t = null)
-        {
-            return (int) UnixTimeD(t);
+        public static int UnixTime(DateTime? t = null) {
+            return (int)UnixTimeD(t);
         }
         /// <summary>
         /// The amount of seconds sinds 1 Jan 1970 for time t
@@ -420,8 +434,7 @@ namespace CryptoPals
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
-        public static double UnixTimeD(DateTime? t = null)
-        {
+        public static double UnixTimeD(DateTime? t = null) {
             return (t ?? DateTime.Now).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
         }
     }

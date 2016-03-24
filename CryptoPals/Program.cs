@@ -41,6 +41,8 @@ namespace CryptoPals
             Console.WriteLine("Predicted next random number: {0}", Helpers.ToBitString(nextCloned));
             Console.WriteLine("Next random number:           {0}", Helpers.ToBitString(nextOriginal));
 
+            // @Stop and think: the problem here is the invertability of the tampering.
+            // If you use hashes, that's no longer possible, but the rng would become A LOT slower.
             return nextOriginal == nextCloned;
         }
 

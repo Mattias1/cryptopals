@@ -73,12 +73,12 @@ namespace CryptoPals
 
     public class BlockCipherResult
     {
+        public byte[] Cipher;
+        public byte[] Iv;
+
         public BlockCipherResult(byte[] cipher, byte[] iv) {
             this.Cipher = cipher;
             this.Iv = iv;
         }
-
-        public byte[] Cipher;
-        public byte[] Iv;
     }
 }

@@ -4,7 +4,7 @@ namespace CryptoPals
 {
     class MersenneTwister
     {
-        // The constants
+        #region The constants
         const int w = 32;
         const int n = 624;
         const int m = 397;
@@ -18,10 +18,11 @@ namespace CryptoPals
         const uint c = 0xEFC60000;
         const int l = 18;
 
-        const uint f = 1812433253; // Only used in initialization
+        const uint f = 1812433253;
 
         const uint lowerMask = (1u << r) - 1;
         const uint upperMask = ~lowerMask;
+        #endregion
 
         uint[] state;
         int index;
@@ -92,7 +93,7 @@ namespace CryptoPals
 
             return y;
         }
-        
+
         static uint untemperRightShift(uint y, int bitsShifted) {
             if (bitsShifted <= 0)
                 throw new Exception("The untemperRightShift method expects the # bits shifted to be at least 1");

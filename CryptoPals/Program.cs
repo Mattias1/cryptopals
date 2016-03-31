@@ -15,11 +15,122 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge23();
+            bool result = challenge24();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Create the MT19937 stream cipher and break it
+        static bool challenge24() {
+            // Part 1. Create the MT19937 stream cipher
+            byte[] input = Helpers.FromUTF8String("Test input");
+            byte[] key = Helpers.RandomByteArray(2);
+            uint nonce = Helpers.ToUInt(Helpers.RandomByteArray(2));
+
+            byte[] cipher = encryptOrDecryptMt19937(input, key, nonce);
+            byte[] backToInput = encryptOrDecryptMt19937(cipher, key, nonce);
+
+            if (!Helpers.Equals(backToInput, input)) {
+                Helpers.PrintUTF8String(backToInput);
+                return false;
+            }
+
+            // Part 2. Decrypt a known plaintext (prefixed with some random chars) and crack the key
+            key = new byte[2];
+            input = Helpers.FromUTF8String(Helpers.RandomString() + "AAAAAAAAAAAAAA");
+            BlockCipherResult cipherAndNonce = encryptionOracle24(input);
+            cipher = cipherAndNonce.Cipher;
+            byte[] nonceBytes = cipherAndNonce.Iv;
+            uint[] mtNumbers = Helpers.SplitUp(Helpers.XOR(input, cipher), 4).Select(Helpers.ToUInt).ToArray();
+
+            // There are 2 ways in which I can break this:
+            // 1. Bruteforce the key (only 2^16 bits)
+            // 2. Untwist the state to get the previous state (this should not be not feasible)
+            unchecked {
+                for (int b1 = 0; b1 < 256; b1++)
+                    for (int b2 = 0; b2 < 256; b2++) {
+                        byte[] k = { (byte)b1, (byte)b2, nonceBytes[0], nonceBytes[1] };
+                        var mt = new MersenneTwister(k);
+
+                        // Check of de keystream overeenkomt - het laatste nummer is getruncate, dus die geloof ik wel
+                        bool failed = false;
+                        for (int i = 0; i < mtNumbers.Length - 1; i++)
+                            if (mtNumbers[i] != mt.Next())
+                                failed = true;
+                        if (failed)
+                            continue;
+
+                        key[0] = (byte)b1;
+                        key[1] = (byte)b2;
+                        Console.WriteLine("The seed: {0}", Helpers.ToHexString(k));
+                    }
+            }
+            byte[] cipher2 = encryptOrDecryptMt19937(input, key, Helpers.ToUInt(nonceBytes));
+            if (!Helpers.Equals(cipher2, cipher))
+            {
+                Console.WriteLine("Failed part 2");
+                return false;
+            }
+
+            // Part 3. Generate and check for a random password token
+            Console.WriteLine();
+            uint startTimeStamp = Helpers.UnixTimeU();
+            string token = randomPasswordToken();
+            Console.WriteLine(token);
+            uint endTimeStamp = Helpers.UnixTimeU();
+
+            bool tokenIsMtFromCurrentTime = false;
+            for (uint t = startTimeStamp; t <= endTimeStamp; t++)
+                if (token == randomPasswordToken(t))
+                {
+                    tokenIsMtFromCurrentTime = true;
+                    Console.WriteLine("This token is generated with seed {0}, which is the current timestamp.");
+                }
+
+            return tokenIsMtFromCurrentTime;
+        }
+
+        static string randomPasswordToken(uint? seed = null, int nrOfBytes = 25)
+        {
+            const int uintsize = 4;
+
+            byte[] result = new byte[Helpers.ClosestMultipleHigher(nrOfBytes, uintsize)];
+            var mt = new MersenneTwister(seed ?? Helpers.UnixTimeU());
+            for (int i = 0; i < nrOfBytes; i += uintsize)
+                Array.Copy(Helpers.LittleEndian(mt.Next()), 0, result, i, uintsize);
+
+            return Helpers.ToTokenString(result, nrOfBytes);
+        }
+
+        static BlockCipherResult encryptionOracle24(byte[] input) {
+            if (fixedKey == null)
+                fixedKey = new byte[2];
+            fixedKey = Helpers.RandomByteArray(2);
+            uint nonce = Helpers.ToUInt(Helpers.RandomByteArray(2));
+            byte[] result = encryptOrDecryptMt19937(input, fixedKey, nonce);
+            return BlockCipher.Result(result, Helpers.LittleEndian(nonce));
+        }
+
+        static byte[] encryptOrDecryptMt19937(byte[] input, byte[] key, uint nonce) {
+            const int uintsize = 4;
+
+            // Init the MT
+            byte[] seed = new byte[uintsize];
+            Array.Copy(key, seed, uintsize / 2);
+            Array.Copy(Helpers.LittleEndian(nonce), 0, seed, uintsize / 2, uintsize / 2);
+            var mt = new MersenneTwister(seed);
+
+            // Generate the keystream
+            byte[] keystream = new byte[Helpers.ClosestMultipleHigher(input.Length, uintsize)];
+            for (int i = 0; i < keystream.Length; i += uintsize) {
+                uint tempUint = mt.Next();
+                byte[] temp = Helpers.LittleEndian(tempUint);
+                Array.Copy(temp, 0, keystream, i, uintsize);
+            }
+
+            return Helpers.XOR(input, keystream);
         }
 
         // Clone a MT19937 RNG from its output
@@ -256,7 +367,7 @@ namespace CryptoPals
             int blocksize = 16;
             // The idea is to tamper the ciphertext in the following way:
             // - xor out the guessed byte (only if guessed right of course) and then xor in the new padding (say, 0x01).
-            // - Check it's padding; if that padding is valid: then the last byte is, with high probability, 0x01, 
+            // - Check it's padding; if that padding is valid: then the last byte is, with high probability, 0x01,
             //   so our guess was right and we know a byte of the input.
 
             // Get the encrypted string we want to decrypt

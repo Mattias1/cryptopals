@@ -40,6 +40,11 @@ namespace CryptoPals
                 this.state[i] = f * (this.state[i - 1] ^ (this.state[i - 1] >> (w - 2))) + i;
         }
         /// <summary>
+        /// Seed the Mersenne twister (MT19937)
+        /// </summary>
+        /// <param name="seed"></param>
+        public MersenneTwister(byte[] seed) : this(Helpers.ToUInt(seed)) { }
+        /// <summary>
         /// Clone from a mersenne twister state
         /// </summary>
         /// <param name="state"></param>

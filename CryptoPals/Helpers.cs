@@ -19,6 +19,12 @@ namespace CryptoPals
             return result;
         }
 
+        public static string RandomString(int length = -1) {
+            if (length < 0)
+                length = Helpers.Random.Next(3, 10);
+            return ToTokenString(Helpers.RandomByteArray(length), length);
+        }
+
         // Encodings
         /// <summary>
         /// Convert a string with hexadecimal digits [0..9, A..F]* to a byte array.
@@ -86,7 +92,7 @@ namespace CryptoPals
         public static string ToBitString(uint raw, bool add0b = true) {
             int size = raw < 0x100 ? 8 : 32;
             char[] result = new char[size];
-            for (int i = 0; i <size; i++)
+            for (int i = 0; i < size; i++)
                 result[i] = (raw & (1u << size - i - 1)) != 0 ? '1' : '0';
 
             return (add0b ? "0b" : "") + new string(result);
@@ -107,6 +113,23 @@ namespace CryptoPals
         /// <returns></returns>
         public static string ToUTF8String(byte[] raw) {
             return Encoding.UTF8.GetString(raw, 0, raw.Length);
+        }
+
+        public static string ToTokenString(byte[] raw, int maxLength = -1) {
+            string result = Convert.ToBase64String(raw).Replace("=", "").Replace('/', '_');
+            return maxLength < 0 ? result : result.Substring(0, maxLength);
+        }
+
+        public static byte[] FromUInt(uint i) {
+            return BitConverter.GetBytes(i);
+        }
+
+        public static uint ToUInt(byte[] raw) {
+            if (raw.Length == 4)
+                return BitConverter.ToUInt32(raw, 0);
+            byte[] four = new byte[4];
+            Array.Copy(raw, four, Math.Min(raw.Length, four.Length));
+            return ToUInt(four);
         }
 
         /// <summary>
@@ -134,20 +157,17 @@ namespace CryptoPals
             return Convert.FromBase64String(fileContent);
         }
 
-        /// <summary>
-        /// Get the bytes of a number in little endian format
-        /// </summary>
-        /// <param name="number"></param>
-        /// <returns></returns>
-        public static byte[] LittleEndian(ulong number) {
-            int nrOfBytes = sizeof(ulong);
+        public static byte[] LittleEndian(ulong number, int nrOfBytes = sizeof(ulong)) {
             byte[] result = new byte[nrOfBytes];
 
             const ulong fullByte = 0xFF;
             for (int i = 0; i < nrOfBytes; i++)
-                result[i] = (byte)(number & fullByte >> (i * 8));
+                result[i] = (byte)((number >> (i * 8)) & fullByte);
 
             return result;
+        }
+        public static byte[] LittleEndian(uint number, int nrOfBytes = sizeof(uint)) {
+            return LittleEndian((ulong)number, nrOfBytes);
         }
 
         /// <summary>

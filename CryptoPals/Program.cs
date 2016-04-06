@@ -22,6 +22,32 @@ namespace CryptoPals
             Console.ReadLine();
         }
 
+        #region Set 3
+
+        // Run all challenges of set 2
+        static bool runSet3() {
+            bool result = true;
+
+            Console.WriteLine("Challenge 17:");
+            result &= challenge17();
+            Console.WriteLine("\nChallenge 18:");
+            result &= challenge18();
+            Console.WriteLine("\nChallenge 19:");
+            result &= challenge19();
+            Console.WriteLine("\nChallenge 20:");
+            result &= challenge20();
+            Console.WriteLine("\nChallenge 21:");
+            result &= challenge21();
+            Console.WriteLine("\nChallenge 22:");
+            result &= challenge22(false);
+            Console.WriteLine("\nChallenge 23:");
+            result &= challenge23();
+            Console.WriteLine("\nChallenge 24:");
+            result &= challenge24();
+
+            return result;
+        }
+
         // Create the MT19937 stream cipher and break it
         static bool challenge24() {
             // Part 1. Create the MT19937 stream cipher
@@ -39,26 +65,31 @@ namespace CryptoPals
 
             // Part 2. Decrypt a known plaintext (prefixed with some random chars) and crack the key
             key = new byte[2];
-            input = Helpers.FromUTF8String(Helpers.RandomString() + "AAAAAAAAAAAAAA");
+            input = Helpers.FromUTF8String("AAAAAAAAAAAAAA");
             BlockCipherResult cipherAndNonce = encryptionOracle24(input);
             cipher = cipherAndNonce.Cipher;
+            int nrOfPrefixBytes = cipher.Length - input.Length;
+            byte[] prefixedInput = new byte[cipher.Length];
+            Array.Copy(input, 0, prefixedInput, nrOfPrefixBytes, input.Length);
             byte[] nonceBytes = cipherAndNonce.Iv;
-            uint[] mtNumbers = Helpers.SplitUp(Helpers.XOR(input, cipher), 4).Select(Helpers.ToUInt).ToArray();
+            byte[] keyStream = Helpers.XOR(prefixedInput, cipher);
 
             // There are 2 ways in which I can break this:
             // 1. Bruteforce the key (only 2^16 bits)
-            // 2. Untwist the state to get the previous state (this should not be not feasible)
+            // 2. Untwist the state to get the previous state (but this should not be not feasible)
             unchecked {
                 for (int b1 = 0; b1 < 256; b1++)
                     for (int b2 = 0; b2 < 256; b2++) {
                         byte[] k = { (byte)b1, (byte)b2, nonceBytes[0], nonceBytes[1] };
                         var mt = new MersenneTwister(k);
+                        byte[] tryStream = mt.NextBytes(cipher.Length);
 
-                        // Check of de keystream overeenkomt - het laatste nummer is getruncate, dus die geloof ik wel
                         bool failed = false;
-                        for (int i = 0; i < mtNumbers.Length - 1; i++)
-                            if (mtNumbers[i] != mt.Next())
+                        for (int i = nrOfPrefixBytes; i < keyStream.Length; i++)
+                            if (keyStream[i] != tryStream[i]) {
                                 failed = true;
+                                break;
+                            }
                         if (failed)
                             continue;
 
@@ -67,9 +98,9 @@ namespace CryptoPals
                         Console.WriteLine("The seed: {0}", Helpers.ToHexString(k));
                     }
             }
-            byte[] cipher2 = encryptOrDecryptMt19937(input, key, Helpers.ToUInt(nonceBytes));
-            if (!Helpers.Equals(cipher2, cipher))
-            {
+            byte[] cipher2 = encryptOrDecryptMt19937(prefixedInput, key, Helpers.ToUInt(nonceBytes));
+            Array.Copy(cipher, cipher2, nrOfPrefixBytes); // I don't know the random bytes, so I'l cheat a bit
+            if (!Helpers.Equals(cipher2, cipher)) {
                 Console.WriteLine("Failed part 2");
                 return false;
             }
@@ -83,23 +114,17 @@ namespace CryptoPals
 
             bool tokenIsMtFromCurrentTime = false;
             for (uint t = startTimeStamp; t <= endTimeStamp; t++)
-                if (token == randomPasswordToken(t))
-                {
+                if (token == randomPasswordToken(t)) {
                     tokenIsMtFromCurrentTime = true;
-                    Console.WriteLine("This token is generated with seed {0}, which is the current timestamp.");
+                    Console.WriteLine("This token is generated with seed {0}, which is the current timestamp.", t);
                 }
 
             return tokenIsMtFromCurrentTime;
         }
 
-        static string randomPasswordToken(uint? seed = null, int nrOfBytes = 25)
-        {
-            const int uintsize = 4;
-
-            byte[] result = new byte[Helpers.ClosestMultipleHigher(nrOfBytes, uintsize)];
+        static string randomPasswordToken(uint? seed = null, int nrOfBytes = 25) {
             var mt = new MersenneTwister(seed ?? Helpers.UnixTimeU());
-            for (int i = 0; i < nrOfBytes; i += uintsize)
-                Array.Copy(Helpers.LittleEndian(mt.Next()), 0, result, i, uintsize);
+            byte[] result = mt.NextBytes(nrOfBytes);
 
             return Helpers.ToTokenString(result, nrOfBytes);
         }
@@ -107,9 +132,10 @@ namespace CryptoPals
         static BlockCipherResult encryptionOracle24(byte[] input) {
             if (fixedKey == null)
                 fixedKey = new byte[2];
+            byte[] randomPrefix = Helpers.RandomByteArray(Helpers.Random.Next(10, 20));
             fixedKey = Helpers.RandomByteArray(2);
             uint nonce = Helpers.ToUInt(Helpers.RandomByteArray(2));
-            byte[] result = encryptOrDecryptMt19937(input, fixedKey, nonce);
+            byte[] result = encryptOrDecryptMt19937(Helpers.Concatenate(randomPrefix, input), fixedKey, nonce);
             return BlockCipher.Result(result, Helpers.LittleEndian(nonce));
         }
 
@@ -123,12 +149,7 @@ namespace CryptoPals
             var mt = new MersenneTwister(seed);
 
             // Generate the keystream
-            byte[] keystream = new byte[Helpers.ClosestMultipleHigher(input.Length, uintsize)];
-            for (int i = 0; i < keystream.Length; i += uintsize) {
-                uint tempUint = mt.Next();
-                byte[] temp = Helpers.LittleEndian(tempUint);
-                Array.Copy(temp, 0, keystream, i, uintsize);
-            }
+            byte[] keystream = mt.NextBytes(input.Length);
 
             return Helpers.XOR(input, keystream);
         }
@@ -158,11 +179,11 @@ namespace CryptoPals
         }
 
         // Crack an MT19937 seeded on current timestamp
-        static bool challenge22() {
+        static bool challenge22(bool hardMode = true) {
             // Send the request (and measure the begin and end times)
             Console.WriteLine("Sending the 'request'...");
             uint startTimestamp = Helpers.UnixTimeU();
-            uint randomNumber = getRandom22();
+            uint randomNumber = getRandom22(hardMode);
             uint finishTimestamp = Helpers.UnixTimeU();
             Console.WriteLine("Analyzing...\n");
 
@@ -339,6 +360,12 @@ namespace CryptoPals
         }
 
         static byte[] encryptOrDecryptAesCtr(byte[] input, byte[] key, ulong nonce) {
+            return encryptOrDecryptAesCtr(input, key, Helpers.LittleEndian(nonce));
+        }
+        static byte[] encryptOrDecryptAesCtr(BlockCipherResult cipherAndNonce, byte[] key) {
+            return encryptOrDecryptAesCtr(cipherAndNonce.Cipher, key, cipherAndNonce.Iv);
+        }
+        static byte[] encryptOrDecryptAesCtr(byte[] input, byte[] key, byte[] nonce) {
             const int blocksize = 16;
             const int halfBlocksize = blocksize / 2;
             byte[] result = new byte[input.Length];
@@ -348,7 +375,7 @@ namespace CryptoPals
                 byte[] block = Helpers.CopyPartOf(input, i, blocksize);
 
                 byte[] nonceAndCounter = new byte[blocksize];
-                Array.Copy(Helpers.LittleEndian(nonce), nonceAndCounter, halfBlocksize);
+                Array.Copy(nonce, nonceAndCounter, halfBlocksize);
                 Array.Copy(Helpers.LittleEndian(counter), 0, nonceAndCounter, halfBlocksize, halfBlocksize);
 
                 byte[] keystream = BlockCipher.EncryptAES(nonceAndCounter, key, null, CipherMode.ECB, PaddingMode.None);
@@ -453,6 +480,8 @@ namespace CryptoPals
             byte[] plain = BlockCipher.DecryptAES(cipher, fixedKey, iv, CipherMode.CBC, PaddingMode.None);
             return checkPKCS7(plain);
         }
+
+        #endregion
 
         #region Set 2
 

@@ -27,10 +27,6 @@ namespace CryptoPals
         uint[] state;
         int index;
 
-        /// <summary>
-        /// Seed the Mersenne twister (MT19937)
-        /// </summary>
-        /// <param name="seed"></param>
         public MersenneTwister(uint seed = 5489) {
             // Initialize the state
             this.index = n;
@@ -39,25 +35,12 @@ namespace CryptoPals
             for (uint i = 1; i < n; i++)
                 this.state[i] = f * (this.state[i - 1] ^ (this.state[i - 1] >> (w - 2))) + i;
         }
-        /// <summary>
-        /// Seed the Mersenne twister (MT19937)
-        /// </summary>
-        /// <param name="seed"></param>
         public MersenneTwister(byte[] seed) : this(Helpers.ToUInt(seed)) { }
-        /// <summary>
-        /// Clone from a mersenne twister state
-        /// </summary>
-        /// <param name="state"></param>
-        public MersenneTwister(uint[] state)
-        {
+        public MersenneTwister(uint[] state) {
             this.index = n;
             this.state = state;
         }
 
-        /// <summary>
-        /// Extract the next 32 bits
-        /// </summary>
-        /// <returns></returns>
         public uint Next() {
             // Extract the next number
             if (this.index >= n)
@@ -73,6 +56,16 @@ namespace CryptoPals
             return y;
         }
 
+        public byte[] NextBytes() {
+            return Helpers.LittleEndian(this.Next());
+        }
+        public byte[] NextBytes(int length) {
+            byte[] result = new byte[length];
+            for (int i = 0; i < length; i += 4)
+                Array.Copy(this.NextBytes(), 0, result, i, Math.Min(4, length - i));
+            return result;
+        }
+
         private void twist() {
             // Generate the next n values for the state
             for (int i = 0; i < n; i++) {
@@ -85,11 +78,6 @@ namespace CryptoPals
             this.index = 0;
         }
 
-        /// <summary>
-        /// Untemper an extracted value
-        /// </summary>
-        /// <param name="y"></param>
-        /// <returns></returns>
         public static uint Untemper(uint y) {
             y = untemperRightShift(y, l);
             y = untemperLeftShift(y, c, t);

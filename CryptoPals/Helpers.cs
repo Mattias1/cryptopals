@@ -239,10 +239,9 @@ namespace CryptoPals
         /// <param name="arrays"></param>
         /// <returns></returns>
         public static byte[] Concatenate(params byte[][] arrays) {
-            // Create an array with the correct length
             int length = arrays.Sum(raw => raw.Length);
             byte[] result = new byte[length];
-            // Fill it
+
             int index = 0;
             foreach (byte[] raw in arrays) {
                 Array.Copy(raw, 0, result, index, raw.Length);

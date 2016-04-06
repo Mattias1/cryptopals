@@ -76,6 +76,8 @@ namespace CryptoPals
         public byte[] Cipher;
         public byte[] Iv;
 
+        public int Length => this.Cipher.Length;
+
         public BlockCipherResult(byte[] cipher, byte[] iv) {
             this.Cipher = cipher;
             this.Iv = iv;

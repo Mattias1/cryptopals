@@ -15,11 +15,85 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge24();
+            bool result = challenge25();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Break 'random access read/write' AES CTR
+        static bool challenge25() {
+            BlockCipherResult cipherAndNonce = encryptionOracle25();
+            byte[] cipher = cipherAndNonce.Cipher;
+            byte[] plain = new byte[cipher.Length];
+
+            Console.WriteLine("Decrypting ({0} bytes)", cipher.Length);
+            unchecked {
+                for (int i = 0; i < cipher.Length; i++) {
+                    for (int newPlainByte = 0; newPlainByte < 256; newPlainByte++) {
+                        byte newCipherByte = editOracle(cipherAndNonce, i, (byte)newPlainByte)[i];
+                        if (newCipherByte == cipher[i]) {
+                            plain[i] = (byte)newPlainByte;
+                            newPlainByte = 256;
+                        }
+                    }
+
+                    if (i % 100 == 0)
+                        Console.Write('.');
+                }
+            }
+            Console.WriteLine('\n');
+
+            Helpers.PrintUTF8String(plain);
+
+            return Helpers.QuickCheck(plain, 2880, "I'm back and I'm ringin' the bell");
+        }
+
+        static BlockCipherResult encryptionOracle25() {
+            byte[] input = Helpers.ReadBase64File("Data/25.txt"); // Encrypted input from challenge 7
+            byte[] key = Helpers.FromUTF8String("YELLOW SUBMARINE");
+            input = BlockCipher.DecryptAES(input, key, null, CipherMode.ECB, PaddingMode.PKCS7);
+
+            byte[] nonce = Helpers.RandomByteArray(8);
+            if (fixedKey == null)
+                fixedKey = Helpers.RandomByteArray(16);
+
+            byte[] cipher = encryptOrDecryptAesCtr(input, fixedKey, nonce);
+            return BlockCipher.Result(cipher, nonce);
+        }
+
+        static byte[] editOracle(BlockCipherResult cipherAndNonce, int offset, byte replacement) {
+            // Optimized version for changing 1 byte only
+            const int blocksize = 16;
+            const int halfBlocksize = blocksize / 2;
+
+            // Generate the keystream for the block the new plain byte is in
+            byte[] result = Helpers.Copy(cipherAndNonce.Cipher);
+            int counter = offset / blocksize;
+            int blockStart = counter * blocksize;
+            byte[] block = Helpers.CopyPartOf(cipherAndNonce.Cipher, blockStart, blocksize);
+
+            byte[] nonceAndCounter = new byte[blocksize];
+            Array.Copy(cipherAndNonce.Iv, nonceAndCounter, halfBlocksize);
+            Array.Copy(Helpers.LittleEndian((ulong)counter), 0, nonceAndCounter, halfBlocksize, halfBlocksize);
+
+            byte[] keystream = BlockCipher.EncryptAES(nonceAndCounter, fixedKey, null, CipherMode.ECB, PaddingMode.None);
+
+            // Change the old plain byte
+            block = Helpers.XOR(block, keystream);
+            block[offset - blockStart] = replacement;
+            block = Helpers.XOR(block, keystream);
+
+            Array.Copy(block, 0, result, blockStart, Math.Min(result.Length - blockStart, blocksize));
+            return result;
+        }
+        static byte[] editOracle(BlockCipherResult cipherAndNonce, int offset, byte[] replacement) {
+            byte[] plain = encryptOrDecryptAesCtr(cipherAndNonce, fixedKey);
+            byte[] result = new byte[Math.Max(cipherAndNonce.Length, offset + replacement.Length)];
+            Array.Copy(plain, result, plain.Length);
+            Array.Copy(replacement, 0, result, offset, replacement.Length);
+            return encryptOrDecryptAesCtr(result, fixedKey, cipherAndNonce.Iv);
         }
 
         #region Set 3
@@ -369,12 +443,12 @@ namespace CryptoPals
             const int blocksize = 16;
             const int halfBlocksize = blocksize / 2;
             byte[] result = new byte[input.Length];
+            byte[] nonceAndCounter = new byte[blocksize];
             ulong counter = 0;
 
             for (int i = 0; i < input.Length; i += blocksize) {
                 byte[] block = Helpers.CopyPartOf(input, i, blocksize);
 
-                byte[] nonceAndCounter = new byte[blocksize];
                 Array.Copy(nonce, nonceAndCounter, halfBlocksize);
                 Array.Copy(Helpers.LittleEndian(counter), 0, nonceAndCounter, halfBlocksize, halfBlocksize);
 

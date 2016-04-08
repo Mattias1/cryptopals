@@ -15,11 +15,52 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge25();
+            bool result = challenge26();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Modify a CTR encrypted cookie (bitflipping)
+        static bool challenge26() {
+            string userdata = "---4---8---4---8" + "_admin_true";
+            BlockCipherResult cipherAndNonce = encryptionOracle26(Helpers.FromUTF8String(userdata));
+            byte[] cipher = cipherAndNonce.Cipher;
+
+            // index of first '_' char is: 8 + 1 + 14 + 1 + 8 + 1 + 16 = 49
+            byte[] xors = new byte[cipher.Length];
+            byte _ = Helpers.FromUTF8Char('_');
+            byte and = Helpers.FromUTF8Char('&');
+            byte eq = Helpers.FromUTF8Char('=');
+            xors[49] = (byte)(_ ^ and);
+            xors[49 + 6] = (byte)(_ ^ eq);
+
+            cipher = Helpers.XOR(cipher, xors);
+            cipherAndNonce.Cipher = cipher;
+
+            return decryptionOracle26(cipherAndNonce);
+        }
+
+        static BlockCipherResult encryptionOracle26(byte[] input) {
+            const int blocksize = 16;
+
+            byte[] nonce = Helpers.RandomByteArray(8);
+            if (fixedKey == null)
+                fixedKey = Helpers.RandomByteArray(blocksize);
+
+            string userData = Helpers.ToUTF8String(input);
+            var cookie = KeyValuePairs.CookingUserdata(userData);
+            byte[] urlBytes = Helpers.FromUTF8String(cookie.ToUrl());
+
+            return BlockCipher.Result(encryptOrDecryptAesCtr(urlBytes, fixedKey, nonce), nonce);
+        }
+
+        static bool decryptionOracle26(BlockCipherResult cipherAndNonce) {
+            byte[] plain = encryptOrDecryptAesCtr(cipherAndNonce, fixedKey);
+
+            var cookie = KeyValuePairs.FromURL(Helpers.ToUTF8String(plain));
+            return cookie["admin"] == "true";
         }
 
         // Break 'random access read/write' AES CTR
@@ -583,7 +624,7 @@ namespace CryptoPals
             return result;
         }
 
-        // Modify a CBC encrypted cookie
+        // Modify a CBC encrypted cookie (bitflipping)
         static bool challenge16() {
             // The goal again is to modify the (AES-123 CBC encrypted) cookie and slip an admin=true inside
             // Input:   Number of bytes in the cookie string before our content: 8+1+13+1+8+1 = 32 bytes prepending data (exactly 2 blocks, easy for us)
@@ -595,9 +636,9 @@ namespace CryptoPals
             byte[] cipher = encryptionOracle16(Helpers.FromUTF8String(userdata));
 
             byte[] xors = new byte[cipher.Length];
-            byte _ = Helpers.FromUTF8String("_")[0];
-            byte and = Helpers.FromUTF8String("&")[0];
-            byte eq = Helpers.FromUTF8String("=")[0];
+            byte _ = Helpers.FromUTF8Char('_');
+            byte and = Helpers.FromUTF8Char('&');
+            byte eq = Helpers.FromUTF8Char('=');
             xors[33] = (byte)(_ ^ and);
             xors[39] = (byte)(_ ^ eq);
 

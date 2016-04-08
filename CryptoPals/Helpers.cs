@@ -98,21 +98,15 @@ namespace CryptoPals
             return (add0b ? "0b" : "") + new string(result);
         }
 
-        /// <summary>
-        /// Convert a normal UTF-8 string into a byte array
-        /// </summary>
-        /// <param name="message"></param>
-        /// <returns></returns>
         public static byte[] FromUTF8String(string message) {
             return Encoding.UTF8.GetBytes(message);
         }
-        /// <summary>
-        /// Converts a byte array to a normal UTF-8 string
-        /// </summary>
-        /// <param name="raw"></param>
-        /// <returns></returns>
         public static string ToUTF8String(byte[] raw) {
             return Encoding.UTF8.GetString(raw, 0, raw.Length);
+        }
+
+        public static byte FromUTF8Char(char c) {
+            return FromUTF8String(new string(new char[] { c }))[0];
         }
 
         public static string ToTokenString(byte[] raw, int maxLength = -1) {

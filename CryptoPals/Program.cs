@@ -15,11 +15,63 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge26();
+            bool result = challenge27();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Break CBC key where IV = Key
+        static bool challenge27() {
+            const int blocksize = 16;
+
+            byte[] input = Helpers.RandomByteArray(60); // long enough
+            byte[] cipher = encryptionOracle27(input);
+
+            byte[] firstBlock = Helpers.CopyPartOf(cipher, 0, blocksize);
+            Array.Copy(new byte[blocksize], 0, cipher, blocksize, blocksize);
+            Array.Copy(firstBlock, 0, cipher, 2 * blocksize, blocksize);
+
+            try {
+                decryptionOracle27(cipher);
+            }
+            catch (Exception e) {
+                byte[] decryption = Helpers.FromHexString(e.Message);
+                firstBlock = Helpers.CopyPartOf(decryption, 0, blocksize);
+                byte[] thirdBlock = Helpers.CopyPartOf(decryption, 2 * blocksize, blocksize);
+
+                byte[] key = Helpers.XOR(firstBlock, thirdBlock);
+                Helpers.PrintHexString("Key: ", key);
+                return Helpers.Equals(key, fixedKey);
+            }
+
+            Console.WriteLine("No high ascii values after modifying the cipher o_O");
+            return false;
+        }
+
+        static byte[] encryptionOracle27(byte[] input) {
+            // CBC encrypt with IV = key
+            const int blocksize = 16;
+            if (fixedKey == null)
+                fixedKey = Helpers.RandomByteArray(blocksize);
+
+            string userData = Helpers.ToUTF8String(input);
+            KeyValuePairs cookie = KeyValuePairs.CookingUserdata(userData);
+            string url = cookie.ToUrl();
+            return BlockCipher.EncryptAES(Helpers.FromUTF8String(url), fixedKey, fixedKey, CipherMode.CBC, PaddingMode.PKCS7);
+        }
+
+        static bool decryptionOracle27(byte[] cipher) {
+            byte[] original = BlockCipher.DecryptAES(cipher, fixedKey, fixedKey, CipherMode.CBC, PaddingMode.None);
+            byte[] plain = unPKCS7(original);
+
+            // If the plain contains high ascii values, return exception with the (decrypted) plaintext
+            if (plain.Any(b => b > (int)'z' + 20))
+                throw new Exception(Helpers.ToHexString(plain));
+
+            KeyValuePairs cookie = KeyValuePairs.FromURL(Helpers.ToUTF8String(plain));
+            return cookie["admin"] == "true";
         }
 
         // Modify a CTR encrypted cookie (bitflipping)
@@ -649,7 +701,7 @@ namespace CryptoPals
 
         static byte[] encryptionOracle16(byte[] input) {
             // Emulate a function at the server to cook some userData like a pound of bacon
-            int blocksize = 16;
+            const int blocksize = 16;
 
             // Generate a random (so unknown) key and use it throughout the rest of the program
             if (fixedKey == null)
@@ -664,7 +716,7 @@ namespace CryptoPals
 
         static bool decryptionOracle16(byte[] cipher) {
             // Check the cookie for admin access
-            int blocksize = 16;
+            const int blocksize = 16;
 
             // Decrypt the cookie
             byte[] original = BlockCipher.DecryptAES(cipher, fixedKey, new byte[blocksize], CipherMode.CBC, PaddingMode.None);

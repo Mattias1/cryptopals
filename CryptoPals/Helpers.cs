@@ -126,26 +126,19 @@ namespace CryptoPals
             return ToUInt(four);
         }
 
-        /// <summary>
-        /// Print a byte array as a normal UTF-8 string to the console
-        /// </summary>
-        /// <param name="raw"></param>
         public static void PrintUTF8String(byte[] raw) {
             Console.WriteLine(ToUTF8String(raw));
         }
-        /// <summary>
-        /// Print a byte array as a hexadecimal string to the console
-        /// </summary>
-        /// <param name="raw"></param>
+
         public static void PrintHexString(byte[] raw, bool add0x = true) {
             Console.WriteLine(ToHexString(raw, add0x));
         }
 
-        /// <summary>
-        /// Return the content of a base64 encoded file as a byte array
-        /// </summary>
-        /// <param name="filename"></param>
-        /// <returns></returns>
+        public static void PrintHexString(string prefix, byte[] raw, bool add0x = true)
+        {
+            Console.WriteLine(prefix + ToHexString(raw, add0x));
+        }
+
         public static byte[] ReadBase64File(string filename) {
             string fileContent = File.ReadAllText(filename).Replace("\n", "").Replace("\r", "");
             return Convert.FromBase64String(fileContent);

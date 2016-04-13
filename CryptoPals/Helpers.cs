@@ -26,11 +26,6 @@ namespace CryptoPals
         }
 
         // Encodings
-        /// <summary>
-        /// Convert a string with hexadecimal digits [0..9, A..F]* to a byte array.
-        /// </summary>
-        /// <param name="hexString"></param>
-        /// <returns></returns>
         public static byte[] FromHexString(string hexString) {
             // Initialize: work with a lowercase string without "0x" in front and without spaces
             hexString = hexString.ToLower().Replace(" ", "");
@@ -55,11 +50,6 @@ namespace CryptoPals
                 result[result.Length - 1] <<= hexString.Length % 2 * 4;
             return result;
         }
-        /// <summary>
-        /// Converts a byte array to a string with hexadecimal digits.
-        /// </summary>
-        /// <param name="raw"></param>
-        /// <returns></returns>
         public static string ToHexString(byte[] raw, bool add0x = false) {
             // Initialize
             char[] result = new char[raw.Length * 2];
@@ -83,12 +73,6 @@ namespace CryptoPals
             return $"{hex[raw >> 4]}{hex[raw & 0x0f]}";
         }
 
-        /// <summary>
-        /// Convert a raw set of bits (uing) to bitstring (string)
-        /// </summary>
-        /// <param name="raw"></param>
-        /// <param name="add0b"></param>
-        /// <returns></returns>
         public static string ToBitString(uint raw, bool add0b = true) {
             int size = raw < 0x100 ? 8 : 32;
             char[] result = new char[size];
@@ -134,8 +118,7 @@ namespace CryptoPals
             Console.WriteLine(ToHexString(raw, add0x));
         }
 
-        public static void PrintHexString(string prefix, byte[] raw, bool add0x = true)
-        {
+        public static void PrintHexString(string prefix, byte[] raw, bool add0x = true) {
             Console.WriteLine(prefix + ToHexString(raw, add0x));
         }
 
@@ -157,9 +140,6 @@ namespace CryptoPals
             return LittleEndian((ulong)number, nrOfBytes);
         }
 
-        /// <summary>
-        /// Print (parts of) the ASCII table to the console
-        /// </summary>
         public static string PrintAsciiTable(bool hex = true) {
             string[] toPrint = {
                 "abcdefghijklm",
@@ -193,24 +173,12 @@ namespace CryptoPals
         }
 
         // Byte array manipulations
-        /// <summary>
-        /// Copy a full byte array
-        /// </summary>
-        /// <param name="raw"></param>
-        /// <returns></returns>
         public static byte[] Copy(byte[] raw) {
             byte[] result = new byte[raw.Length];
             Array.Copy(raw, result, raw.Length);
             return result;
         }
 
-        /// <summary>
-        /// Copy a part of the raw array
-        /// </summary>
-        /// <param name="raw"></param>
-        /// <param name="start">The start index of the part of the raw array that we want to copy</param>
-        /// <param name="length">The length of the part we want to copy</param>
-        /// <returns></returns>
         public static byte[] CopyPartOf(byte[] raw, int start, int length) {
             byte[] result = new byte[length];
             if (start + length > raw.Length)
@@ -220,11 +188,6 @@ namespace CryptoPals
             return result;
         }
 
-        /// <summary>
-        /// Concatenate all given raw arrays into one byte array
-        /// </summary>
-        /// <param name="arrays"></param>
-        /// <returns></returns>
         public static byte[] Concatenate(params byte[][] arrays) {
             int length = arrays.Sum(raw => raw.Length);
             byte[] result = new byte[length];
@@ -237,12 +200,6 @@ namespace CryptoPals
             return result;
         }
 
-        /// <summary>
-        /// Split up the raw byte array in smaller byte arrays of a fixed (maximum) blocksize
-        /// </summary>
-        /// <param name="raw"></param>
-        /// <param name="blocksize"></param>
-        /// <returns></returns>
         public static byte[][] SplitUp(byte[] raw, int blocksize) {
             byte[][] result = new byte[(raw.Length + blocksize - 1) / blocksize][]; // Integer division rounded up (beware of overflowing)
             for (int i = 0; i < result.Length; i++)
@@ -250,11 +207,6 @@ namespace CryptoPals
             return result;
         }
 
-        /// <summary>
-        /// Transpose the array of byte arrays
-        /// </summary>
-        /// <param name="blocks"></param>
-        /// <returns></returns>
         public static byte[][] Transpose(byte[][] blocks) {
             if (blocks.Length == 0)
                 return new byte[0][];
@@ -315,24 +267,12 @@ namespace CryptoPals
             return result;
         }
 
-        /// <summary>
-        /// XOR an array in place at a specific position with a specific byte
-        /// </summary>
-        /// <param name="raw"></param>
-        /// <param name="index"></param>
-        /// <param name="xorWith"></param>
         public static byte[] XorAt(byte[] raw, int index, int xorWith) {
             raw[index] = (byte)(raw[index] ^ xorWith);
             return raw;
         }
 
         // Misc
-        /// <summary>
-        /// Return whether or not two byte arrays are equal (in content, not (nescessarily) memory address)
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
         public static bool Equals<T>(T[] a, T[] b)
                 where T : IEquatable<T> {
             if (a.Length != b.Length)
@@ -364,13 +304,6 @@ namespace CryptoPals
             return result;
         }
 
-        /// <summary>
-        /// Do a quick check on whether or not the result is correct-ish
-        /// </summary>
-        /// <param name="result"></param>
-        /// <param name="totalLength"></param>
-        /// <param name="begin"></param>
-        /// <returns></returns>
         public static bool QuickCheck(byte[] result, int totalLength, string begin) {
             return result.Length == totalLength && Helpers.ToUTF8String(Helpers.CopyPartOf(result, 0, begin.Length)) == begin;
         }
@@ -419,27 +352,12 @@ namespace CryptoPals
             return ToClipboard(ToHexString(raw, add0x));
         }
 
-        /// <summary>
-        /// The amount of seconds sinds 1 Jan 1970 for time t
-        /// </summary>
-        /// <param name="t"></param>
-        /// <returns></returns>
         public static int UnixTime(DateTime? t = null) {
             return (int)UnixTimeD(t);
         }
-        /// <summary>
-        /// The amount of seconds sinds 1 Jan 1970 for time t
-        /// </summary>
-        /// <param name="t"></param>
-        /// <returns></returns>
         public static uint UnixTimeU(DateTime? t = null) {
             return (uint)UnixTimeD(t);
         }
-        /// <summary>
-        /// The amount of seconds sinds 1 Jan 1970 for time t
-        /// </summary>
-        /// <param name="t"></param>
-        /// <returns></returns>
         public static double UnixTimeD(DateTime? t = null) {
             return (t ?? DateTime.Now).Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
         }

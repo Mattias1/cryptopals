@@ -15,11 +15,21 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge27();
+            bool result = challenge28();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
+        }
+
+        // Implement SHA-1 MAC
+        static bool challenge28() {
+            string hash = Hash.Sha1("");
+
+            Console.WriteLine($"Berekende hash:  {hash}");
+            Console.WriteLine($"Verwachtte hash: {Hash.EmptySha1Hash}");
+
+            return false;
         }
 
         // Break CBC key where IV = Key
@@ -169,7 +179,7 @@ namespace CryptoPals
 
             byte[] nonceAndCounter = new byte[blocksize];
             Array.Copy(cipherAndNonce.Iv, nonceAndCounter, halfBlocksize);
-            Array.Copy(Helpers.LittleEndian((ulong)counter), 0, nonceAndCounter, halfBlocksize, halfBlocksize);
+            Array.Copy(Helpers.ToLittleEndian((ulong)counter), 0, nonceAndCounter, halfBlocksize, halfBlocksize);
 
             byte[] keystream = BlockCipher.EncryptAES(nonceAndCounter, fixedKey, null, CipherMode.ECB, PaddingMode.None);
 
@@ -303,7 +313,7 @@ namespace CryptoPals
             fixedKey = Helpers.RandomByteArray(2);
             uint nonce = Helpers.ToUInt(Helpers.RandomByteArray(2));
             byte[] result = encryptOrDecryptMt19937(Helpers.Concatenate(randomPrefix, input), fixedKey, nonce);
-            return BlockCipher.Result(result, Helpers.LittleEndian(nonce));
+            return BlockCipher.Result(result, Helpers.ToLittleEndian(nonce));
         }
 
         static byte[] encryptOrDecryptMt19937(byte[] input, byte[] key, uint nonce) {
@@ -312,7 +322,7 @@ namespace CryptoPals
             // Init the MT
             byte[] seed = new byte[uintsize];
             Array.Copy(key, seed, uintsize / 2);
-            Array.Copy(Helpers.LittleEndian(nonce), 0, seed, uintsize / 2, uintsize / 2);
+            Array.Copy(Helpers.ToLittleEndian(nonce), 0, seed, uintsize / 2, uintsize / 2);
             var mt = new MersenneTwister(seed);
 
             // Generate the keystream
@@ -511,7 +521,7 @@ namespace CryptoPals
 
         // Implement CTR mode of AES
         static bool challenge18() {
-            int blocksize = 16;
+            const int blocksize = 16;
             byte[] input = Convert.FromBase64String("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==");
             byte[] key = Helpers.FromUTF8String("YELLOW SUBMARINE");
             ulong nonce = 0;
@@ -527,7 +537,7 @@ namespace CryptoPals
         }
 
         static byte[] encryptOrDecryptAesCtr(byte[] input, byte[] key, ulong nonce) {
-            return encryptOrDecryptAesCtr(input, key, Helpers.LittleEndian(nonce));
+            return encryptOrDecryptAesCtr(input, key, Helpers.ToLittleEndian(nonce));
         }
         static byte[] encryptOrDecryptAesCtr(BlockCipherResult cipherAndNonce, byte[] key) {
             return encryptOrDecryptAesCtr(cipherAndNonce.Cipher, key, cipherAndNonce.Iv);
@@ -543,7 +553,7 @@ namespace CryptoPals
                 byte[] block = Helpers.CopyPartOf(input, i, blocksize);
 
                 Array.Copy(nonce, nonceAndCounter, halfBlocksize);
-                Array.Copy(Helpers.LittleEndian(counter), 0, nonceAndCounter, halfBlocksize, halfBlocksize);
+                Array.Copy(Helpers.ToLittleEndian(counter), 0, nonceAndCounter, halfBlocksize, halfBlocksize);
 
                 byte[] keystream = BlockCipher.EncryptAES(nonceAndCounter, key, null, CipherMode.ECB, PaddingMode.None);
 
@@ -558,7 +568,7 @@ namespace CryptoPals
 
         // Decrypt a random CBC encrypted string, using a CBC padding oracle
         static bool challenge17() {
-            int blocksize = 16;
+            const int blocksize = 16;
             // The idea is to tamper the ciphertext in the following way:
             // - xor out the guessed byte (only if guessed right of course) and then xor in the new padding (say, 0x01).
             // - Check it's padding; if that padding is valid: then the last byte is, with high probability, 0x01,
@@ -614,7 +624,7 @@ namespace CryptoPals
         }
 
         static BlockCipherResult encryptionOracle17() {
-            int blocksize = 16;
+            const int blocksize = 16;
 
             // Pick one of these strings (at random)
             string[] sources = new string[] {
@@ -826,7 +836,7 @@ namespace CryptoPals
 
         static byte[] encryptionOracle14(byte[] input) {
             // This function takes an input and encrypts it with a fixed unknown key (fixedKey)
-            int blocksize = 16;
+            const int blocksize = 16;
 
             // Generate a random (so unknown) key and use it throughout the rest of the program
             if (fixedKey == null) {
@@ -864,7 +874,7 @@ namespace CryptoPals
             // And now we replace the third block with our word admin, and there we have our cut 'n pasted message
 
             // First try
-            int blocksize = 16;
+            const int blocksize = 16;
             byte[] before = Helpers.FromUTF8String("AAAAAAAAAA");
             byte[] adminWord = PKCS7(Helpers.FromUTF8String("admin"), blocksize);
             byte[] after = Helpers.FromUTF8String("@gmail.com");
@@ -887,7 +897,7 @@ namespace CryptoPals
 
         static byte[] encryptionOracle13(byte[] email) {
             // Emulate a function at the server to generate a valid encrypted cookie
-            int blocksize = 16;
+            const int blocksize = 16;
 
             // Generate a random (so unknown) key and use it throughout the rest of the program
             if (fixedKey == null) {
@@ -965,7 +975,7 @@ namespace CryptoPals
 
         static byte[] encryptionOracle12(byte[] input) {
             // This function takes an input and encrypts it with a fixed unknown key (fixedKey)
-            int blocksize = 16;
+            const int blocksize = 16;
 
             // Generate a random (so unknown) key and use it throughout the rest of the program
             if (fixedKey == null)
@@ -997,7 +1007,7 @@ namespace CryptoPals
 
         static bool oracleUsesECB(Func<byte[], byte[]> oracleFunction) {
             // Detect whether or not the function encrypted using ECB mode
-            int blocksize = 16;
+            const int blocksize = 16;
             int blocks = 6;
 
             byte[] input = new byte[blocks * blocksize]; // input some blocks with only zeroes - at least 5 of them should give equal blocks after encryption with ECB
@@ -1126,7 +1136,7 @@ namespace CryptoPals
             return result;
         }
         static int getPKCS7(byte[] raw) {
-            // Check whether or not the raw array is a properly PKCS7-padded. Throw when it's not.
+            // Check whether or not the raw array is a properly PKCS7-padded. Return -1 when not valid.
             int paddingLength = raw.Last();
             for (int i = 0; i < paddingLength; i++)
                 if (raw[raw.Length - i - 1] != paddingLength)
@@ -1271,7 +1281,7 @@ namespace CryptoPals
                 Array.Copy(keySoFar, key, keySoFar.Length);
 
             byte[][] transposed = Helpers.Transpose(Helpers.SplitUp(input, keysize));
-            for (int j = keySoFar.Length; j < transposed.Length; j++)
+            for (int j = keySoFar?.Length ?? 0; j < transposed.Length; j++)
                 key[j] = attackSingleXOR(transposed[j]);
 
             return key;

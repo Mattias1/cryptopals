@@ -2,7 +2,7 @@
 
 namespace CryptoPals
 {
-    class MersenneTwister
+    public class MersenneTwister
     {
         #region The constants
         const int w = 32;
@@ -57,7 +57,7 @@ namespace CryptoPals
         }
 
         public byte[] NextBytes() {
-            return Helpers.LittleEndian(this.Next());
+            return Helpers.ToLittleEndian(this.Next());
         }
         public byte[] NextBytes(int length) {
             byte[] result = new byte[length];

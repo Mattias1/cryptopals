@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace CryptoPals
 {
-    static class Helpers
+    public static class Helpers
     {
         // Random
         private static Random random;
@@ -113,13 +113,23 @@ namespace CryptoPals
         public static void PrintUTF8String(byte[] raw) {
             Console.WriteLine(ToUTF8String(raw));
         }
+        public static void PrintUTF8String(string prefix, byte[] raw) {
+            Console.WriteLine(prefix + ToUTF8String(raw));
+        }
 
         public static void PrintHexString(byte[] raw, bool add0x = true) {
             Console.WriteLine(ToHexString(raw, add0x));
         }
-
         public static void PrintHexString(string prefix, byte[] raw, bool add0x = true) {
             Console.WriteLine(prefix + ToHexString(raw, add0x));
+        }
+        public static void PrintBigEndianHexString(string prefix, uint[] raw, bool add0x = true) {
+            PrintHexString(prefix, ToBigEndianByteArray(raw), add0x);
+        }
+
+        public static byte[] ToBigEndianByteArray(uint[] raw)
+        {
+            return Concatenate(raw.Select(i => ToBigEndian(i)).ToArray());
         }
 
         public static byte[] ReadBase64File(string filename) {
@@ -127,7 +137,7 @@ namespace CryptoPals
             return Convert.FromBase64String(fileContent);
         }
 
-        public static byte[] LittleEndian(ulong number, int nrOfBytes = sizeof(ulong)) {
+        public static byte[] ToLittleEndian(ulong number, int nrOfBytes = sizeof(ulong)) {
             byte[] result = new byte[nrOfBytes];
 
             const ulong fullByte = 0xFF;
@@ -136,8 +146,22 @@ namespace CryptoPals
 
             return result;
         }
-        public static byte[] LittleEndian(uint number, int nrOfBytes = sizeof(uint)) {
-            return LittleEndian((ulong)number, nrOfBytes);
+        public static byte[] ToLittleEndian(uint number, int nrOfBytes = sizeof(uint)) {
+            return ToLittleEndian((ulong)number, nrOfBytes);
+        }
+
+        public static byte[] ToBigEndian(ulong number, int nrOfBytes = sizeof(ulong)) {
+            byte[] result = new byte[nrOfBytes];
+
+            const ulong fullByte = 0xFF;
+            for (int i = 0; i < nrOfBytes; i++)
+                result[nrOfBytes - i - 1] = (byte)((number >> (i * 8)) & fullByte);
+
+            return result;
+        }
+
+        public static byte[] ToBigEndian(uint number, int nrOfBytes = sizeof(uint)) {
+            return ToBigEndian((ulong)number, nrOfBytes);
         }
 
         public static string PrintAsciiTable(bool hex = true) {
@@ -302,6 +326,14 @@ namespace CryptoPals
                     if ((a[i] & bit) != (b[i] & bit))
                         result++;
             return result;
+        }
+
+        public static uint LeftRotate(uint bits, int amount) {
+            return (bits << amount) | (bits >> (32 - amount));
+        }
+
+        public static uint RightRotate(uint bits, int amount) {
+            return (bits >> amount) | (bits << (32 - amount));
         }
 
         public static bool QuickCheck(byte[] result, int totalLength, string begin) {

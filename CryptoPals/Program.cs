@@ -24,10 +24,15 @@ namespace CryptoPals
 
         // Implement SHA-1 MAC
         static bool challenge28() {
-            string hash = Hash.Sha1("");
 
-            Console.WriteLine($"Berekende hash:  {hash}");
-            Console.WriteLine($"Verwachtte hash: {Hash.EmptySha1Hash}");
+            foreach (var knownHash in Hash.KnownHashes)
+            {
+                Console.WriteLine($"In: '{knownHash.Key}'");
+                string hash = Hash.Sha1(knownHash.Key);
+
+                Console.WriteLine($"Berekende hash:  {hash}");
+                Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
+            }
 
             return false;
         }

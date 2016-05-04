@@ -1,30 +1,33 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CryptoPals
 {
     public class Hash
     {
-        public const string EmptySha1Hash = "da39a3ee5e6b4b0d3255bfef95601890afd80709";
+        public static Dictionary<string, string> KnownHashes => new Dictionary<string, string> {
+            {"", "da39a3ee5e6b4b0d3255bfef95601890afd80709"},
+            { "The quick brown fox jumps over the lazy dog", "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"},
+            { "The quick brown fox jumps over the lazy cog", "de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3"}
+        };
 
         public static string Sha1(string message) {
             return Helpers.ToHexString(Sha1(Helpers.FromUTF8String(message)), false);
         }
 
         public static byte[] Sha1(byte[] message) {
-            // Note: all numbers are in big endian notation - check if this doesn't conflict with things
+            // Note: all numbers are in big endian notation
             const int chunkSize = 64;
 
             // Initialization
             uint[] hash = { 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0 };
-
             int closestMultiple = Helpers.ClosestMultipleHigher(message.Length + sizeof(ulong), chunkSize);
             byte[] state = new byte[Math.Max(chunkSize, closestMultiple)];
             Array.Copy(message, state, message.Length);
-            if (message.Length % chunkSize == 0) // Is this if nescessary?
-                state[message.Length] = 0x80;
-            byte[] lengthBytes = Helpers.ToBigEndian((uint)message.Length);
-            Array.Copy(lengthBytes, 0, state, state.Length - lengthBytes.Length - 1, lengthBytes.Length);
+            state[message.Length] = 0x80;
+            byte[] bitLength = Helpers.ToBigEndian((uint)(message.Length * 8));
+            Array.Copy(bitLength, 0, state, state.Length - bitLength.Length, bitLength.Length);
 
             // Process the message in chunks
             byte[][] stateChunks = Helpers.SplitUp(state, chunkSize);
@@ -36,7 +39,9 @@ namespace CryptoPals
                 for (int i = 16; i < 80; i++)
                     words[i] = Helpers.LeftRotate(words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16], 1);
 
-                uint[] chunkHash = (uint[])(hash.Clone());
+                uint[] chunkHash = (uint[])hash.Clone();
+
+                // Helpers.PrintBigEndianHexString("DEBUG: ", chunkHash, false);
 
                 // Main for loop
                 for (int i = 0; i < words.Length; i++) {

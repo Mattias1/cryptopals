@@ -79,5 +79,9 @@ namespace CryptoPals
             // Return the final hash
             return Helpers.ToBigEndianByteArray(hash);
         }
+
+        public static byte[] Sha1Mac(byte[] key, byte[] message) {
+            return Sha1(Helpers.Concatenate(key, message));
+        }
     }
 }

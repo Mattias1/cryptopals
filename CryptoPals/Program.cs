@@ -24,17 +24,36 @@ namespace CryptoPals
 
         // Implement SHA-1 MAC
         static bool challenge28() {
-
-            foreach (var knownHash in Hash.KnownHashes)
-            {
-                Console.WriteLine($"In: '{knownHash.Key}'");
+            // Make sure the sha1 hash is implemented correctly
+            foreach (var knownHash in Hash.KnownHashes) {
                 string hash = Hash.Sha1(knownHash.Key);
+                if (hash != knownHash.Value) {
 
-                Console.WriteLine($"Berekende hash:  {hash}");
-                Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
+                    Console.WriteLine($"In: '{knownHash.Key}'");
+                    Console.WriteLine($"Berekende hash:  {hash}");
+                    Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
+                    return false;
+                }
             }
 
-            return false;
+            // Test our Sha1 keyed MAC
+            byte[] key = Helpers.RandomByteArray(16);
+            byte[] mac = Hash.Sha1Mac(key, Helpers.FromUTF8String("Hi there"));
+            Helpers.PrintHexString("MAC: ", mac);
+
+            byte[] macTempered = Hash.Sha1Mac(key, Helpers.FromUTF8String("Hi therE"));
+            if (macTempered == mac) {
+                Console.WriteLine("Tempered message gives the same mac!");
+                return false;
+            }
+
+            byte[] newMac = Hash.Sha1(Helpers.FromUTF8String("Hi there"));
+            if (newMac == mac) {
+                Console.WriteLine("New mac is the same as the original mac!");
+                return false;
+            }
+
+            return true;
         }
 
         // Break CBC key where IV = Key

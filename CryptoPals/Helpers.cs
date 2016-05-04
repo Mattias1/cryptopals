@@ -127,8 +127,7 @@ namespace CryptoPals
             PrintHexString(prefix, ToBigEndianByteArray(raw), add0x);
         }
 
-        public static byte[] ToBigEndianByteArray(uint[] raw)
-        {
+        public static byte[] ToBigEndianByteArray(uint[] raw) {
             return Concatenate(raw.Select(i => ToBigEndian(i)).ToArray());
         }
 

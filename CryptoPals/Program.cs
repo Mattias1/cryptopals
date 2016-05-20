@@ -15,18 +15,76 @@ namespace CryptoPals
             Console.WriteLine("\n Crypto pals challenges output:");
             Console.WriteLine("--------------------------------\n");
 
-            bool result = challenge28();
+            bool result = challenge29();
 
             Console.WriteLine("\n--------------------------------");
             Console.WriteLine(result ? " SUCCESS!" : " FAIL!");
             Console.ReadLine();
         }
 
+        // Break a SHA-1 keyed MAC using length extension
+        static bool challenge29() {
+            // Get the original message and hash
+            byte[] message;
+            byte[] hash = macOracle29(out message);
+            uint[] lengthExtensionInitHash = Helpers.SplitUp(hash, 4).Select(Helpers.BigEndianToUint).ToArray();
+
+            if (!checkMessageMac(message, hash)) {
+                Console.WriteLine("Error, initial mac is not correct.");
+                return false;
+            }
+            if (!Helpers.Equals(Helpers.ToBigEndianByteArray(lengthExtensionInitHash), hash)) {
+                Console.WriteLine("Error parsing the initial hash.");
+                return false;
+            }
+
+            bool hackSucceeded = false;
+            for (int keyLength = 0; keyLength < 100; keyLength++) {
+                // Forge the tampered message
+                byte[] extraMessage = Helpers.FromUTF8String("&admin=true");
+                byte[] messageWith0Key = Helpers.Concatenate(new byte[keyLength], message);
+                byte[] lengthExtensionMessage = Helpers.Concatenate(Sha1.MdPadding(messageWith0Key), extraMessage);
+                lengthExtensionMessage = Helpers.CopyPartOf(lengthExtensionMessage, keyLength, lengthExtensionMessage.Length - keyLength);
+
+                var newCookie = KeyValuePairs.FromURL(Helpers.ToUTF8String(lengthExtensionMessage));
+                if (newCookie["admin"] != "true") {
+                    Console.WriteLine("Error, new cookie is not gonna give us admin rights.");
+                    return false;
+                }
+
+                // Forge the hash
+                int originalHashLengthGuess = Sha1.MdPaddingLength(messageWith0Key);
+                byte[] newHash = Sha1.HashLengthExtension(extraMessage, originalHashLengthGuess, lengthExtensionInitHash);
+
+                hackSucceeded = checkMessageMac(lengthExtensionMessage, newHash);
+                if (hackSucceeded)
+                    break;
+            }
+            Console.WriteLine(hackSucceeded ? "I AM ADMIN" : "Hack failed.");
+
+            return hackSucceeded;
+        }
+
+        static byte[] macOracle29(out byte[] message) {
+            fixedKey = Helpers.RandomByteArray(16);
+
+            var cookie = KeyValuePairs.CookingUserdata("foo");
+            message = Helpers.FromUTF8String(cookie.ToUrl());
+            byte[] hash = Sha1.Mac(fixedKey, message);
+
+            return hash;
+        }
+
+        static bool checkMessageMac(byte[] message, byte[] mac) {
+            byte[] hash = Sha1.Mac(fixedKey, message);
+            return Helpers.Equals(hash, mac);
+        }
+
         // Implement SHA-1 MAC
         static bool challenge28() {
             // Make sure the sha1 hash is implemented correctly
-            foreach (var knownHash in Hash.KnownHashes) {
-                string hash = Hash.Sha1(knownHash.Key);
+            foreach (var knownHash in Sha1.KnownHashes) {
+                string hash = Sha1.Hash(knownHash.Key);
                 if (hash != knownHash.Value) {
 
                     Console.WriteLine($"In: '{knownHash.Key}'");
@@ -36,18 +94,18 @@ namespace CryptoPals
                 }
             }
 
-            // Test our Sha1 keyed MAC
+            // Test our SHA-1 keyed MAC
             byte[] key = Helpers.RandomByteArray(16);
-            byte[] mac = Hash.Sha1Mac(key, Helpers.FromUTF8String("Hi there"));
+            byte[] mac = Sha1.Mac(key, Helpers.FromUTF8String("Hi there"));
             Helpers.PrintHexString("MAC: ", mac);
 
-            byte[] macTempered = Hash.Sha1Mac(key, Helpers.FromUTF8String("Hi therE"));
+            byte[] macTempered = Sha1.Mac(key, Helpers.FromUTF8String("Hi therE"));
             if (macTempered == mac) {
                 Console.WriteLine("Tempered message gives the same mac!");
                 return false;
             }
 
-            byte[] newMac = Hash.Sha1(Helpers.FromUTF8String("Hi there"));
+            byte[] newMac = Sha1.Hash(Helpers.FromUTF8String("Hi there"));
             if (newMac == mac) {
                 Console.WriteLine("New mac is the same as the original mac!");
                 return false;

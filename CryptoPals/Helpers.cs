@@ -110,6 +110,10 @@ namespace CryptoPals
             return ToUInt(four);
         }
 
+        public static uint BigEndianToUint(byte[] raw) {
+            return ToUInt(raw.Reverse().ToArray());
+        }
+
         public static void PrintUTF8String(byte[] raw) {
             Console.WriteLine(ToUTF8String(raw));
         }

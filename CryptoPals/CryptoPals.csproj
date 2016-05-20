@@ -49,7 +49,7 @@
     <Compile Include="ScoreList.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Hash.cs" />
+    <Compile Include="Sha1.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

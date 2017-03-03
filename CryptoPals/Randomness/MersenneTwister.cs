@@ -35,7 +35,7 @@ namespace CryptoPals
             for (uint i = 1; i < n; i++)
                 this.state[i] = f * (this.state[i - 1] ^ (this.state[i - 1] >> (w - 2))) + i;
         }
-        public MersenneTwister(byte[] seed) : this(Helpers.ToUInt(seed)) { }
+        public MersenneTwister(byte[] seed) : this(ConversionHelpers.ToUInt(seed)) { }
         public MersenneTwister(uint[] state) {
             this.index = n;
             this.state = state;
@@ -57,7 +57,7 @@ namespace CryptoPals
         }
 
         public byte[] NextBytes() {
-            return Helpers.ToLittleEndian(this.Next());
+            return ConversionHelpers.ToLittleEndian(this.Next());
         }
         public byte[] NextBytes(int length) {
             byte[] result = new byte[length];

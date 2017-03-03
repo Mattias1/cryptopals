@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace CryptoPals
 {
-    public class Sha1
+    public static class Sha1
     {
         public const int ChunkSize = 64;
 
@@ -22,11 +22,11 @@ namespace CryptoPals
         }
 
         public static byte[] Mac(byte[] key, byte[] message) {
-            return Hash(Helpers.Concatenate(key, message));
+            return Hash(ByteArrayHelpers.Concatenate(key, message));
         }
 
         public static string Hash(string message) {
-            return Helpers.ToHexString(Hash(Helpers.FromUTF8String(message)), false);
+            return ConversionHelpers.ToHexString(Hash(ConversionHelpers.FromUTF8String(message)), false);
         }
         public static byte[] Hash(byte[] message) {
             uint[] hash = { 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0 };
@@ -34,7 +34,7 @@ namespace CryptoPals
 
             MainLoop(beginState, hash);
 
-            return Helpers.ToBigEndianByteArray(hash);
+            return ConversionHelpers.ToBigEndianByteArray(hash);
         }
 
         public static byte[] HashLengthExtension(byte[] extraMessage, int originalHashLengthGuess, uint[] initHash) {
@@ -46,7 +46,7 @@ namespace CryptoPals
 
             MainLoop(beginState, hash);
 
-            return Helpers.ToBigEndianByteArray(hash);
+            return ConversionHelpers.ToBigEndianByteArray(hash);
         }
 
         public static byte[] MdPadding(byte[] message, int? overrideMessageLength = null) {
@@ -57,18 +57,18 @@ namespace CryptoPals
 
             result[message.Length] = 0x80;
 
-            byte[] bitLength = Helpers.ToBigEndian((uint)(overrideMessageLength ?? message.Length) * 8);
+            byte[] bitLength = ConversionHelpers.ToBigEndian((uint)(overrideMessageLength ?? message.Length) * 8);
             Array.Copy(bitLength, 0, result, result.Length - bitLength.Length, bitLength.Length);
 
             return result;
         }
 
         public static int MdPaddingLength(byte[] message) {
-            return Helpers.ClosestMultipleHigher(message.Length + sizeof(ulong), ChunkSize);
+            return MiscHelpers.ClosestMultipleHigher(message.Length + sizeof(ulong), ChunkSize);
         }
 
         private static void MainLoop(byte[] beginState, uint[] hash) {
-            byte[][] stateChunks = Helpers.SplitUp(beginState, ChunkSize);
+            byte[][] stateChunks = ByteArrayHelpers.SplitUp(beginState, ChunkSize);
             foreach (byte[] chunk in stateChunks) {
                 uint[] words = GetWords(chunk);
 
@@ -82,9 +82,9 @@ namespace CryptoPals
         private static uint[] GetWords(byte[] chunk) {
             var words = new uint[80];
             for (int i = 0; i < 16; i++)
-                words[i] = Helpers.ToUInt(Helpers.CopyPartOf(chunk, i * 4, 4).Reverse().ToArray());
+                words[i] = ConversionHelpers.ToUInt(ByteArrayHelpers.CopyPartOf(chunk, i * 4, 4).Reverse().ToArray());
             for (int i = 16; i < 80; i++)
-                words[i] = Helpers.LeftRotate(words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16], 1);
+                words[i] = MiscHelpers.LeftRotate(words[i - 3] ^ words[i - 8] ^ words[i - 14] ^ words[i - 16], 1);
             return words;
         }
 
@@ -108,10 +108,10 @@ namespace CryptoPals
                     k = 0xCA62C1D6;
                 }
 
-                uint temp = Helpers.LeftRotate(chunkHash[0], 5) + f + chunkHash[4] + k + words[i];
+                uint temp = MiscHelpers.LeftRotate(chunkHash[0], 5) + f + chunkHash[4] + k + words[i];
                 chunkHash[4] = chunkHash[3];
                 chunkHash[3] = chunkHash[2];
-                chunkHash[2] = Helpers.LeftRotate(chunkHash[1], 30);
+                chunkHash[2] = MiscHelpers.LeftRotate(chunkHash[1], 30);
                 chunkHash[1] = chunkHash[0];
                 chunkHash[0] = temp;
             }

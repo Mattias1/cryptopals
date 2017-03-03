@@ -42,14 +42,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BlockCipher.cs" />
-    <Compile Include="Helpers.cs" />
-    <Compile Include="KeyValuePairs.cs" />
-    <Compile Include="MersenneTwister.cs" />
-    <Compile Include="ScoreList.cs" />
+    <Compile Include="Block crypto\BlockCipher.cs" />
+    <Compile Include="Helpers\ByteArrayHelpers.cs" />
+    <Compile Include="Helpers\ConversionHelpers.cs" />
+    <Compile Include="Helpers\MiscHelpers.cs" />
+    <Compile Include="Analysis\KeyValuePairs.cs" />
+    <Compile Include="Hashes\Md4.cs" />
+    <Compile Include="Hashes\Md4Copy.cs" />
+    <Compile Include="Helpers\RandomHelpers.cs" />
+    <Compile Include="Randomness\MersenneTwister.cs" />
+    <Compile Include="Analysis\ScoreList.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Sha1.cs" />
+    <Compile Include="Sets\Set1-Basics.cs" />
+    <Compile Include="Sets\Set2-Block-crypto.cs" />
+    <Compile Include="Sets\Set3-Block-and-stream-crypto.cs" />
+    <Compile Include="Sets\Set4-Stream-crypto-and-randomness.cs" />
+    <Compile Include="Hashes\Sha1.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

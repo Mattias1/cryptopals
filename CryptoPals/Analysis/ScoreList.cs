@@ -17,9 +17,9 @@ namespace CryptoPals
 
         public string Base64String => Convert.ToBase64String(this.Source);
 
-        public string HexString => Helpers.ToHexString(this.Source);
+        public string HexString => ConversionHelpers.ToHexString(this.Source);
 
-        public string Utf8String => Helpers.ToUTF8String(this.Source);
+        public string Utf8String => ConversionHelpers.ToUTF8String(this.Source);
 
         // Methods for automatic frequency analysis
         /// <summary>
@@ -80,7 +80,7 @@ namespace CryptoPals
         /// <param name="displaySource">Whether or not to display the source array (as a UTF-8 string)</param>
         /// <returns></returns>
         public string ToString(bool displaySource) {
-            return (displaySource ? ("Source: " + this.Utf8String + ", ") : "") + "Key: " + Helpers.ToHexString(this.KeyUsed, true) + ", Score: " + this.Score.ToString();
+            return (displaySource ? ("Source: " + this.Utf8String + ", ") : "") + "Key: " + ConversionHelpers.ToHexString(this.KeyUsed, true) + ", Score: " + this.Score.ToString();
         }
         public override string ToString() {
             return this.ToString(true);

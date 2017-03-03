@@ -76,26 +76,11 @@ namespace CryptoPals
             return FromUTF8String(new string(new char[] { c }))[0];
         }
 
-        public static string ToTokenString(byte[] raw, int maxLength = -1) {
-            string result = Convert.ToBase64String(raw).Replace("=", "").Replace('/', '_');
-            return maxLength < 0 ? result : result.Substring(0, maxLength);
+        public static byte[] ReadBase64File(string filename) {
+            string fileContent = File.ReadAllText(filename).Replace("\n", "").Replace("\r", "");
+            return Convert.FromBase64String(fileContent);
         }
 
-        public static byte[] FromUInt(uint i) {
-            return BitConverter.GetBytes(i);
-        }
-
-        public static uint ToUInt(byte[] raw) {
-            if (raw.Length == 4)
-                return BitConverter.ToUInt32(raw, 0);
-            byte[] four = new byte[4];
-            Array.Copy(raw, four, Math.Min(raw.Length, four.Length));
-            return ToUInt(four);
-        }
-
-        public static uint BigEndianToUint(byte[] raw) {
-            return ToUInt(raw.Reverse().ToArray());
-        }
 
         public static void PrintUTF8String(byte[] raw) {
             Console.WriteLine(ToUTF8String(raw));
@@ -117,15 +102,35 @@ namespace CryptoPals
             PrintHexString(prefix, ToBigEndianByteArray(raw), add0x);
         }
 
+
+        public static string ToTokenString(byte[] raw, int maxLength = -1) {
+            string result = Convert.ToBase64String(raw).Replace("=", "").Replace('/', '_');
+            return maxLength < 0 ? result : result.Substring(0, maxLength);
+        }
+
+        public static byte[] FromUInt(uint i) {
+            return BitConverter.GetBytes(i);
+        }
+
+        public static uint ToUInt(byte[] raw) {
+            if (raw.Length == 4)
+                return BitConverter.ToUInt32(raw, 0);
+            byte[] four = new byte[4];
+            Array.Copy(raw, four, Math.Min(raw.Length, four.Length));
+            return ToUInt(four);
+        }
+
+        public static uint BigEndianToUint(byte[] raw) {
+            return ToUInt(raw.Reverse().ToArray());
+        }
+
         public static byte[] ToBigEndianByteArray(uint[] raw) {
-            return ByteArrayHelpers.Concatenate(raw.Select<uint, byte[]>(i => ToBigEndian(i)).ToArray());
+            return ByteArrayHelpers.Concatenate(raw.Select(i => ToBigEndian(i)).ToArray());
         }
 
-        public static byte[] ReadBase64File(string filename) {
-            string fileContent = File.ReadAllText(filename).Replace("\n", "").Replace("\r", "");
-            return Convert.FromBase64String(fileContent);
+        public static byte[] ToLittleEndian(uint number, int nrOfBytes = sizeof(uint)) {
+            return ToLittleEndian((ulong)number, nrOfBytes);
         }
-
         public static byte[] ToLittleEndian(ulong number, int nrOfBytes = sizeof(ulong)) {
             byte[] result = new byte[nrOfBytes];
 
@@ -136,10 +141,9 @@ namespace CryptoPals
             return result;
         }
 
-        public static byte[] ToLittleEndian(uint number, int nrOfBytes = sizeof(uint)) {
-            return ToLittleEndian((uint)(ulong)number, nrOfBytes);
+        public static byte[] ToBigEndian(uint number, int nrOfBytes = sizeof(uint)) {
+            return ToBigEndian((ulong)number, nrOfBytes);
         }
-
         public static byte[] ToBigEndian(ulong number, int nrOfBytes = sizeof(ulong)) {
             byte[] result = new byte[nrOfBytes];
 
@@ -150,9 +154,6 @@ namespace CryptoPals
             return result;
         }
 
-        public static byte[] ToBigEndian(uint number, int nrOfBytes = sizeof(uint)) {
-            return ToBigEndian((uint)(ulong)number, nrOfBytes);
-        }
 
         public static string PrintAsciiTable(bool hex = true) {
             string[] toPrint = {

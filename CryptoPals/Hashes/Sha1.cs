@@ -8,10 +8,8 @@ namespace CryptoPals
     {
         public const int ChunkSize = 64;
 
-        public static Dictionary<string, string> KnownHashes
-        {
-            get
-            {
+        public static Dictionary<string, string> KnownHashes {
+            get {
                 return new Dictionary<string, string>
                 {
                     {"", "da39a3ee5e6b4b0d3255bfef95601890afd80709"},

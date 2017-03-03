@@ -6,10 +6,8 @@ namespace CryptoPals
     {
         public const int ChunkSize = 64;
 
-        public static Dictionary<string, string> KnownHashes
-        {
-            get
-            {
+        public static Dictionary<string, string> KnownHashes {
+            get {
                 return new Dictionary<string, string>
                 {
                     {"", "31d6cfe0d16ae931b73c59d7e0c089c0"},
@@ -42,7 +40,7 @@ namespace CryptoPals
         private static void MainLoop(byte[] beginState, uint[] hash) {
             byte[][] stateChunks = ByteArrayHelpers.SplitUp(beginState, ChunkSize);
             foreach (byte[] chunk in stateChunks) {
-                
+
             }
         }
     }

@@ -10,6 +10,50 @@ namespace CryptoPals
 
         // Break a MD4-keyed MAC using length extension
         public static bool challenge30() {
+            assertMd4();
+
+            // Get the original message and hash
+            byte[] message;
+            byte[] hash = macOracle30(out message);
+            uint[] lengthExtensionInitHash = ByteArrayHelpers.SplitUp(hash, 4).Select(ConversionHelpers.ToUInt).ToArray();
+
+            if (!checkMessageMac30(message, hash)) {
+                Console.WriteLine("Error, initial mac is not correct.");
+                return false;
+            }
+            if (!MiscHelpers.Equals(ConversionHelpers.ToLittleEndianByteArray(lengthExtensionInitHash), hash)) {
+                Console.WriteLine("Error parsing the initial hash.");
+                return false;
+            }
+
+            bool hackSucceeded = false;
+            for (int keyLength = 0; keyLength < 100; keyLength++) {
+                // Forge the tampered message
+                byte[] extraMessage = ConversionHelpers.FromUTF8String("&admin=true");
+                byte[] messageWith0Key = ByteArrayHelpers.Concatenate(new byte[keyLength], message); // The key is necessary for the MdPadding
+                byte[] leMessageWith0Key = ByteArrayHelpers.Concatenate(Md4.MdPadding(messageWith0Key), extraMessage);
+                byte[] lengthExtensionMessage = ByteArrayHelpers.CopyPartOf(leMessageWith0Key, keyLength, leMessageWith0Key.Length - keyLength);
+
+                var newCookie = KeyValuePairs.FromURL(ConversionHelpers.ToUTF8String(lengthExtensionMessage));
+                if (newCookie["admin"] != "true") {
+                    Console.WriteLine("Error, new cookie is not gonna give us admin rights.");
+                    return false;
+                }
+
+                // Forge the hash
+                int originalHashLengthGuess = Md4.MdPaddingLength(messageWith0Key);
+                byte[] newHash = Md4.HashLengthExtension(extraMessage, originalHashLengthGuess, lengthExtensionInitHash);
+
+                hackSucceeded = checkMessageMac30(lengthExtensionMessage, newHash);
+                if (hackSucceeded)
+                    break;
+            }
+            Console.WriteLine(hackSucceeded ? "I AM ADMIN" : "Hack failed.");
+
+            return hackSucceeded;
+        }
+
+        private static bool assertMd4() {
             // Make sure the Md4 hash is implemented correctly
             foreach (var knownHash in Md4.KnownHashes) {
                 string hash = Md4.Hash(knownHash.Key);
@@ -17,12 +61,26 @@ namespace CryptoPals
                     Console.WriteLine($"In: '{knownHash.Key}'");
                     Console.WriteLine($"Berekende hash:  {hash}");
                     Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
-                    return false;
+
+                    throw new Exception("MD4 error");
                 }
             }
+            return true;
+        }
 
-            // Todo
-            return false;
+        static byte[] macOracle30(out byte[] message) {
+            fixedKey = RandomHelpers.RandomByteArray(16);
+
+            var cookie = KeyValuePairs.CookingUserdata("foo");
+            message = ConversionHelpers.FromUTF8String(cookie.ToUrl());
+            byte[] hash = Md4.Mac(fixedKey, message);
+
+            return hash;
+        }
+
+        static bool checkMessageMac30(byte[] message, byte[] mac) {
+            byte[] hash = Md4.Mac(fixedKey, message);
+            return MiscHelpers.Equals(hash, mac);
         }
 
         // Break a SHA-1 keyed MAC using length extension
@@ -32,7 +90,7 @@ namespace CryptoPals
             byte[] hash = macOracle29(out message);
             uint[] lengthExtensionInitHash = ByteArrayHelpers.SplitUp(hash, 4).Select(ConversionHelpers.BigEndianToUint).ToArray();
 
-            if (!checkMessageMac(message, hash)) {
+            if (!checkMessageMac29(message, hash)) {
                 Console.WriteLine("Error, initial mac is not correct.");
                 return false;
             }
@@ -45,9 +103,9 @@ namespace CryptoPals
             for (int keyLength = 0; keyLength < 100; keyLength++) {
                 // Forge the tampered message
                 byte[] extraMessage = ConversionHelpers.FromUTF8String("&admin=true");
-                byte[] messageWith0Key = ByteArrayHelpers.Concatenate(new byte[keyLength], message);
-                byte[] lengthExtensionMessage = ByteArrayHelpers.Concatenate(Sha1.MdPadding(messageWith0Key), extraMessage);
-                lengthExtensionMessage = ByteArrayHelpers.CopyPartOf(lengthExtensionMessage, keyLength, lengthExtensionMessage.Length - keyLength);
+                byte[] messageWith0Key = ByteArrayHelpers.Concatenate(new byte[keyLength], message); // The key is necessary for the MdPadding
+                byte[] leMessageWith0Key = ByteArrayHelpers.Concatenate(Sha1.MdPadding(messageWith0Key), extraMessage);
+                byte[] lengthExtensionMessage = ByteArrayHelpers.CopyPartOf(leMessageWith0Key, keyLength, leMessageWith0Key.Length - keyLength);
 
                 var newCookie = KeyValuePairs.FromURL(ConversionHelpers.ToUTF8String(lengthExtensionMessage));
                 if (newCookie["admin"] != "true") {
@@ -59,7 +117,7 @@ namespace CryptoPals
                 int originalHashLengthGuess = Sha1.MdPaddingLength(messageWith0Key);
                 byte[] newHash = Sha1.HashLengthExtension(extraMessage, originalHashLengthGuess, lengthExtensionInitHash);
 
-                hackSucceeded = checkMessageMac(lengthExtensionMessage, newHash);
+                hackSucceeded = checkMessageMac29(lengthExtensionMessage, newHash);
                 if (hackSucceeded)
                     break;
             }
@@ -78,7 +136,7 @@ namespace CryptoPals
             return hash;
         }
 
-        static bool checkMessageMac(byte[] message, byte[] mac) {
+        static bool checkMessageMac29(byte[] message, byte[] mac) {
             byte[] hash = Sha1.Mac(fixedKey, message);
             return MiscHelpers.Equals(hash, mac);
         }
@@ -89,7 +147,6 @@ namespace CryptoPals
             foreach (var knownHash in Sha1.KnownHashes) {
                 string hash = Sha1.Hash(knownHash.Key);
                 if (hash != knownHash.Value) {
-
                     Console.WriteLine($"In: '{knownHash.Key}'");
                     Console.WriteLine($"Berekende hash:  {hash}");
                     Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
@@ -103,13 +160,13 @@ namespace CryptoPals
             ConversionHelpers.PrintHexString("MAC: ", mac);
 
             byte[] macTempered = Sha1.Mac(key, ConversionHelpers.FromUTF8String("Hi therE"));
-            if (macTempered == mac) {
+            if (MiscHelpers.Equals(macTempered, mac)) {
                 Console.WriteLine("Tempered message gives the same mac!");
                 return false;
             }
 
             byte[] newMac = Sha1.Hash(ConversionHelpers.FromUTF8String("Hi there"));
-            if (newMac == mac) {
+            if (MiscHelpers.Equals(newMac, mac)) {
                 Console.WriteLine("New mac is the same as the original mac!");
                 return false;
             }

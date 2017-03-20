@@ -121,6 +121,9 @@ namespace CryptoPals
             return BitConverter.GetBytes(i);
         }
 
+        /// <summary>
+        /// Little endian
+        /// </summary>
         public static uint ToUInt(byte[] raw) {
             if (raw.Length == 4)
                 return BitConverter.ToUInt32(raw, 0);

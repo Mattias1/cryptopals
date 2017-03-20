@@ -22,12 +22,28 @@ namespace CryptoPals
             }
         }
 
+        public static byte[] Mac(byte[] key, byte[] message) {
+            return Hash(ByteArrayHelpers.Concatenate(key, message));
+        }
+
         public static string Hash(string message) {
             return ConversionHelpers.ToHexString(Hash(ConversionHelpers.FromUTF8String(message)), false);
         }
         public static byte[] Hash(byte[] message) {
             uint[] hash = { 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476 };
             byte[] beginState = MdPadding(message);
+
+            MainLoop(beginState, hash);
+
+            return ConversionHelpers.ToLittleEndianByteArray(hash);
+        }
+
+        public static byte[] HashLengthExtension(byte[] extraMessage, int originalHashLengthGuess, uint[] initHash) {
+            if (initHash.Length != 4)
+                throw new ArgumentException("The hash initialization array should consist of 5 unsigned 32-bit integers.");
+
+            uint[] hash = (uint[])initHash.Clone();
+            byte[] beginState = MdPadding(extraMessage, originalHashLengthGuess + extraMessage.Length);
 
             MainLoop(beginState, hash);
 

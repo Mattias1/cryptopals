@@ -49,6 +49,9 @@ namespace CryptoPals
                 final = "0x" + final.ToUpper();
             return final;
         }
+        public static string ToHexString(uint[] raw, bool add0x = false) {
+            return ToHexString(ToBigEndianByteArray(raw), add0x);
+        }
 
         private static string toHexString(byte raw) {
             const string hex = "0123456789abcdef";
@@ -93,8 +96,14 @@ namespace CryptoPals
         public static void PrintHexString(byte[] raw, bool add0x = true) {
             Console.WriteLine(ToHexString(raw, add0x));
         }
+        public static void PrintHexString(uint[] raw, bool add0x = true) {
+            Console.WriteLine(ToHexString(raw, add0x));
+        }
 
         public static void PrintHexString(string prefix, byte[] raw, bool add0x = true) {
+            Console.WriteLine(prefix + ToHexString(raw, add0x));
+        }
+        public static void PrintHexString(string prefix, uint[] raw, bool add0x = true) {
             Console.WriteLine(prefix + ToHexString(raw, add0x));
         }
 
@@ -124,6 +133,9 @@ namespace CryptoPals
             return ToUInt(raw.Reverse().ToArray());
         }
 
+        public static byte[] ToLittleEndianByteArray(uint[] raw) {
+            return ByteArrayHelpers.Concatenate(raw.Select(i => ToLittleEndian(i)).ToArray());
+        }
         public static byte[] ToBigEndianByteArray(uint[] raw) {
             return ByteArrayHelpers.Concatenate(raw.Select(i => ToBigEndian(i)).ToArray());
         }

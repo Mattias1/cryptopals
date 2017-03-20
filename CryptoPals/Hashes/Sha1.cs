@@ -47,6 +47,7 @@ namespace CryptoPals
             return ConversionHelpers.ToBigEndianByteArray(hash);
         }
 
+
         public static byte[] MdPadding(byte[] message, int? overrideMessageLength = null) {
             int closestMultiple = MdPaddingLength(message);
 
@@ -64,6 +65,7 @@ namespace CryptoPals
         public static int MdPaddingLength(byte[] message) {
             return MiscHelpers.ClosestMultipleHigher(message.Length + sizeof(ulong), ChunkSize);
         }
+
 
         private static void MainLoop(byte[] beginState, uint[] hash) {
             byte[][] stateChunks = ByteArrayHelpers.SplitUp(beginState, ChunkSize);

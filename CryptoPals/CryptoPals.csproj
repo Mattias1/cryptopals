@@ -49,7 +49,6 @@
     <Compile Include="Helpers\MiscHelpers.cs" />
     <Compile Include="Analysis\KeyValuePairs.cs" />
     <Compile Include="Hashes\Md4.cs" />
-    <Compile Include="Hashes\Md4Copy.cs" />
     <Compile Include="Helpers\RandomHelpers.cs" />
     <Compile Include="Randomness\MersenneTwister.cs" />
     <Compile Include="Analysis\ScoreList.cs" />

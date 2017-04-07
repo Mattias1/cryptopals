@@ -237,12 +237,14 @@ namespace CryptoPals
             ulong nonce = 0;
 
             List<byte[]> result = new List<byte[]>(40);
-            using (StreamReader reader = new StreamReader("Data/20.txt")) {
-                string line;
-                while ((line = reader.ReadLine()) != null) {
-                    byte[] raw = Convert.FromBase64String(line);
-                    raw = encryptOrDecryptAesCtr(raw, fixedKey, nonce);
-                    result.Add(raw);
+            using (FileStream stream = new FileStream("Data/20.txt", FileMode.Open)) {
+                using (StreamReader reader = new StreamReader(stream)) {
+                    string line;
+                    while ((line = reader.ReadLine()) != null) {
+                        byte[] raw = Convert.FromBase64String(line);
+                        raw = encryptOrDecryptAesCtr(raw, fixedKey, nonce);
+                        result.Add(raw);
+                    }
                 }
             }
             return result;
@@ -297,12 +299,14 @@ namespace CryptoPals
             ulong nonce = 0;
 
             List<byte[]> result = new List<byte[]>(40);
-            using (StreamReader reader = new StreamReader("Data/19.txt")) {
-                string line;
-                while ((line = reader.ReadLine()) != null) {
-                    byte[] raw = Convert.FromBase64String(line);
-                    raw = encryptOrDecryptAesCtr(raw, fixedKey, nonce);
-                    result.Add(raw);
+            using (FileStream stream = new FileStream("Data/19.txt", FileMode.Open)) {
+                using (StreamReader reader = new StreamReader(stream)) {
+                    string line;
+                    while ((line = reader.ReadLine()) != null) {
+                        byte[] raw = Convert.FromBase64String(line);
+                        raw = encryptOrDecryptAesCtr(raw, fixedKey, nonce);
+                        result.Add(raw);
+                    }
                 }
             }
             return result;

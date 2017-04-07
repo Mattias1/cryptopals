@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
 
 namespace CryptoPals
 {
@@ -72,28 +71,6 @@ namespace CryptoPals
         /// <returns></returns>
         public static int ClosestMultipleLower(int count, int divisor) {
             return count - count % divisor;
-        }
-
-        /// <summary>
-        /// Save a string to clipboard
-        /// </summary>
-        /// <param name="s"></param>
-        public static bool ToClipboard(string s) {
-            try {
-                Clipboard.SetText(s);
-                return true;
-            }
-            catch (ThreadStateException) {
-                return false;
-            }
-        }
-        /// <summary>
-        /// Save a bytearray to clipoard in hex format
-        /// </summary>
-        /// <param name="raw"></param>
-        /// <param name="add0x"></param>
-        public static bool ToClipboard(byte[] raw, bool add0x = true) {
-            return ToClipboard(ConversionHelpers.ToHexString(raw, add0x));
         }
 
         public static int UnixTime(DateTime? t = null) {

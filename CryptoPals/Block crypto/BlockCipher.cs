@@ -7,15 +7,9 @@ namespace CryptoPals
 {
     public static class BlockCipher
     {
-        // Thank you SO: http://stackoverflow.com/questions/273452/using-aes-encryption-in-c-sharp
-
         public static byte[] EncryptAES(byte[] input, byte[] key, byte[] iv, CipherMode mode, PaddingMode paddingMode) {
-            return EncryptGeneral<AesManaged>(input, key, iv, mode, paddingMode);
-        }
-        public static byte[] EncryptGeneral<T>(byte[] input, byte[] key, byte[] iv, CipherMode mode, PaddingMode paddingMode)
-                where T : SymmetricAlgorithm, new() {
             byte[] result;
-            using (T cipher = new T()) {
+            using (var cipher = Aes.Create()) {
                 cipher.Mode = mode;
                 cipher.Padding = paddingMode;
 
@@ -28,21 +22,15 @@ namespace CryptoPals
                         }
                     }
                 }
-                cipher.Clear();
             }
             return result;
         }
 
-
         public static byte[] DecryptAES(byte[] input, byte[] key, byte[] iv, CipherMode mode, PaddingMode paddingMode) {
-            return DecryptGeneral<AesManaged>(input, key, iv, mode, paddingMode);
-        }
-        public static byte[] DecryptGeneral<T>(byte[] input, byte[] key, byte[] iv, CipherMode mode, PaddingMode paddingMode)
-            where T : SymmetricAlgorithm, new() {
             byte[] result;
             int decryptedByteCount = 0;
 
-            using (T cipher = new T()) {
+            using (var cipher = Aes.Create()) {
                 cipher.Mode = mode;
                 cipher.Padding = paddingMode;
 
@@ -59,12 +47,9 @@ namespace CryptoPals
                 catch (Exception ex) {
                     throw ex;
                 }
-
-                cipher.Clear();
             }
             return result;
         }
-
 
         public static BlockCipherResult Result(byte[] cipher, byte[] iv) {
             return new BlockCipherResult(cipher, iv);

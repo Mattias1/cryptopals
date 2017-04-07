@@ -22,22 +22,24 @@ namespace CryptoPals
             // (I am really assuming that the plaintext has at least some equal blocks)
             int lineNumber = 0;
             ScoreItem[] scoreList = new ScoreItem[5];
-            using (StreamReader reader = new StreamReader("Data/8.txt")) {
-                string line;
-                while ((line = reader.ReadLine()) != null) {
-                    // Init
-                    lineNumber++;
-                    byte[] input = ConversionHelpers.FromHexString(line);
-                    byte[][] blocks = ByteArrayHelpers.SplitUp(input, 16);
+            using (FileStream stream = new FileStream("Data/8.txt", FileMode.Open)) {
+                using (StreamReader reader = new StreamReader(stream)) {
+                    string line;
+                    while ((line = reader.ReadLine()) != null) {
+                        // Init
+                        lineNumber++;
+                        byte[] input = ConversionHelpers.FromHexString(line);
+                        byte[][] blocks = ByteArrayHelpers.SplitUp(input, 16);
 
-                    // Count the number of equal blocks .
-                    ScoreItem current = new ScoreItem(input);
-                    current.KeyUsedInt = lineNumber;
-                    for (int i = 0; i < blocks.Length - 1; i++)
-                        for (int j = i + 1; j < blocks.Length; j++)
-                            if (MiscHelpers.Equals(blocks[i], blocks[j]))
-                                current.Score--;
-                    current.InsertInScoreList(scoreList);
+                        // Count the number of equal blocks .
+                        ScoreItem current = new ScoreItem(input);
+                        current.KeyUsedInt = lineNumber;
+                        for (int i = 0; i < blocks.Length - 1; i++)
+                            for (int j = i + 1; j < blocks.Length; j++)
+                                if (MiscHelpers.Equals(blocks[i], blocks[j]))
+                                    current.Score--;
+                        current.InsertInScoreList(scoreList);
+                    }
                 }
             }
 
@@ -151,13 +153,15 @@ namespace CryptoPals
             // Inits
             ScoreItem[] scoreList = new ScoreItem[10];
 
-            using (StreamReader reader = new StreamReader("Data/4.txt")) {
-                string line;
-                while ((line = reader.ReadLine()) != null) {
-                    byte[] input = ConversionHelpers.FromHexString(line);
+            using (FileStream stream = new FileStream("Data/4.txt", FileMode.Open)) {
+                using (StreamReader reader = new StreamReader(stream)) {
+                    string line;
+                    while ((line = reader.ReadLine()) != null) {
+                        byte[] input = ConversionHelpers.FromHexString(line);
 
-                    // Attack
-                    attackSingleXOR(input, scoreList);
+                        // Attack
+                        attackSingleXOR(input, scoreList);
+                    }
                 }
             }
 

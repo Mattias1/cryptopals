@@ -4,32 +4,11 @@ using System.Security.Cryptography;
 
 namespace CryptoPals
 {
-    class Set2
+    class Set2 : Set
     {
-        static byte[] fixedKey, fixedBytes;
-
         // Run all challenges of set 2
         public static bool runSet2() {
-            bool result = true;
-
-            Console.WriteLine("Challenge 9:");
-            result &= challenge9();
-            Console.WriteLine("\nChallenge 10:");
-            result &= challenge10();
-            Console.WriteLine("\nChallenge 11:");
-            result &= challenge11();
-            Console.WriteLine("\nChallenge 12:");
-            result &= challenge12();
-            Console.WriteLine("\nChallenge 13:");
-            result &= challenge13();
-            Console.WriteLine("\nChallenge 14:");
-            result &= challenge14();
-            Console.WriteLine("\nChallenge 15:");
-            result &= challenge15();
-            Console.WriteLine("\nChallenge 16:");
-            result &= challenge16();
-
-            return result;
+            return runSet(challenge9, challenge10, challenge11, challenge12, challenge13, challenge14, challenge15, challenge16);
         }
 
         // Modify a CBC encrypted cookie (bitflipping)

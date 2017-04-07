@@ -5,30 +5,11 @@ using System.Security.Cryptography;
 
 namespace CryptoPals
 {
-    class Set1
+    class Set1 : Set
     {
         // Run all challenges of set 1
         public static bool runSet1() {
-            bool result = true;
-
-            Console.WriteLine("Challenge 1:");
-            result &= challenge1();
-            Console.WriteLine("\nChallenge 2:");
-            result &= challenge2();
-            Console.WriteLine("\nChallenge 3:");
-            result &= challenge3();
-            Console.WriteLine("\nChallenge 4:");
-            result &= challenge4();
-            Console.WriteLine("\nChallenge 5:");
-            result &= challenge5();
-            Console.WriteLine("\nChallenge 6:");
-            result &= challenge6();
-            Console.WriteLine("\nChallenge 7:");
-            result &= challenge7();
-            Console.WriteLine("\nChallenge 8:");
-            result &= challenge8();
-
-            return result;
+            return runSet(challenge1, challenge2, challenge3, challenge4, challenge5, challenge6, challenge7, challenge8);
         }
 
         // Detect ECB mode

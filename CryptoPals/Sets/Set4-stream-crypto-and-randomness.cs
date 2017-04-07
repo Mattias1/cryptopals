@@ -4,9 +4,17 @@ using System.Security.Cryptography;
 
 namespace CryptoPals
 {
-    class Set4
+    class Set4 : Set
     {
-        static byte[] fixedKey, fixedBytes;
+        // Run all challenges of set 4
+        public static bool runSet4() {
+            return runSet(challenge25, challenge26, challenge27, challenge28, challenge29, challenge30, /*challenge31, challenge32*/);
+        }
+
+        // Implement and break HMAC-SHA1 with an artificial timing leak
+        public static bool challenge31() {
+            return false;
+        }
 
         // Break a MD4-keyed MAC using length extension
         public static bool challenge30() {

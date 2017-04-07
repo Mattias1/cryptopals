@@ -7,32 +7,11 @@ using System.Threading;
 
 namespace CryptoPals
 {
-    class Set3
+    class Set3 : Set
     {
-        static byte[] fixedKey, fixedBytes;
-
         // Run all challenges of set 2
         public static bool runSet3() {
-            bool result = true;
-
-            Console.WriteLine("Challenge 17:");
-            result &= challenge17();
-            Console.WriteLine("\nChallenge 18:");
-            result &= challenge18();
-            Console.WriteLine("\nChallenge 19:");
-            result &= challenge19();
-            Console.WriteLine("\nChallenge 20:");
-            result &= challenge20();
-            Console.WriteLine("\nChallenge 21:");
-            result &= challenge21();
-            Console.WriteLine("\nChallenge 22:");
-            result &= challenge22(false);
-            Console.WriteLine("\nChallenge 23:");
-            result &= challenge23();
-            Console.WriteLine("\nChallenge 24:");
-            result &= challenge24();
-
-            return result;
+            return runSet(challenge17, challenge18, challenge19, challenge20, challenge21, () => challenge22(false), challenge23, challenge24);
         }
 
         // Create the MT19937 stream cipher and break it

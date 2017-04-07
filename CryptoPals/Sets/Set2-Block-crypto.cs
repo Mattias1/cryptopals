@@ -17,21 +17,24 @@ namespace CryptoPals
             // Input:   Number of bytes in the cookie string before our content: 8+1+13+1+8+1 = 32 bytes prepending data (exactly 2 blocks, easy for us)
             //          Number of bytes for the "&admin=true" string: 1+5+1+4 = 11 bytes
 
-            // Plan: insert some random userdata (1 block) and then insert the &admin=true, but without the = and & signs.
+            // Plan: insert some random userdata (2 blocks) and then insert the &admin=true, but without the = and & signs.
             // Then afterwards we modify the ciphertext of the first block of 'userdata' so that the = and & signs will be XOR-ed in.
-            string userdata = "---4---8---4---8" + "_admin_true";
-            byte[] cipher = encryptionOracle16(ConversionHelpers.FromUTF8String(userdata));
+            byte[] userdata = ByteArrayHelpers.Concatenate(new byte[32], ConversionHelpers.FromUTF8String("_admin_true"));
+            byte[] cipher = encryptionOracle16(userdata);
 
             byte[] xors = new byte[cipher.Length];
             byte _ = ConversionHelpers.FromUTF8Char('_');
             byte and = ConversionHelpers.FromUTF8Char('&');
             byte eq = ConversionHelpers.FromUTF8Char('=');
-            xors[33] = (byte)(_ ^ and);
-            xors[39] = (byte)(_ ^ eq);
+            xors[49] = (byte)(_ ^ and);
+            xors[55] = (byte)(_ ^ eq);
 
             cipher = ByteArrayHelpers.XOR(cipher, xors);
 
-            return decryptionOracle16(cipher);
+            bool hackSucceeded = decryptionOracle16(cipher);
+
+            Console.WriteLine(hackSucceeded ? "Yummy, admin rights" : "Awww, no admin");
+            return hackSucceeded;
         }
 
         static byte[] encryptionOracle16(byte[] input) {
@@ -46,7 +49,8 @@ namespace CryptoPals
             string userData = ConversionHelpers.ToUTF8String(input);
             KeyValuePairs cookie = KeyValuePairs.CookingUserdata(userData);
             string url = cookie.ToUrl();
-            return BlockCipher.EncryptAES(ConversionHelpers.FromUTF8String(url), fixedKey, new byte[blocksize], CipherMode.CBC, PaddingMode.PKCS7);
+            byte[] cipher = ConversionHelpers.FromUTF8String(url);
+            return BlockCipher.EncryptAES(cipher, fixedKey, new byte[blocksize], CipherMode.CBC, PaddingMode.PKCS7);
         }
 
         static bool decryptionOracle16(byte[] cipher) {
@@ -58,7 +62,10 @@ namespace CryptoPals
             byte[] plain = unPKCS7(original);
 
             // Check for admin rights
-            KeyValuePairs cookie = KeyValuePairs.FromURL(ConversionHelpers.ToUTF8String(plain));
+            string url = ConversionHelpers.ToUTF8String(plain);
+            int l_plain = plain.Length;
+            int l_url = url.Length;
+            KeyValuePairs cookie = KeyValuePairs.FromURL(url);
             return cookie["admin"] == "true";
         }
 

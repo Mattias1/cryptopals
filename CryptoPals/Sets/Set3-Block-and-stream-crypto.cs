@@ -11,7 +11,7 @@ namespace CryptoPals
     {
         // Run all challenges of set 2
         public static bool runSet3() {
-            return runSet(challenge17, challenge18, challenge19, challenge20, challenge21, () => challenge22(false), challenge23, challenge24);
+            return runSet(17, challenge17, challenge18, challenge19, challenge20, challenge21, () => challenge22(false), challenge23, challenge24);
         }
 
         // Create the MT19937 stream cipher and break it

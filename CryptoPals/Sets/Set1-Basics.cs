@@ -9,7 +9,7 @@ namespace CryptoPals
     {
         // Run all challenges of set 1
         public static bool runSet1() {
-            return runSet(challenge1, challenge2, challenge3, challenge4, challenge5, challenge6, challenge7, challenge8);
+            return runSet(1, challenge1, challenge2, challenge3, challenge4, challenge5, challenge6, challenge7, challenge8);
         }
 
         // Detect ECB mode

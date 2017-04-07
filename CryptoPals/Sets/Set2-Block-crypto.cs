@@ -8,7 +8,7 @@ namespace CryptoPals
     {
         // Run all challenges of set 2
         public static bool runSet2() {
-            return runSet(challenge9, challenge10, challenge11, challenge12, challenge13, challenge14, challenge15, challenge16);
+            return runSet(9, challenge9, challenge10, challenge11, challenge12, challenge13, challenge14, challenge15, challenge16);
         }
 
         // Modify a CBC encrypted cookie (bitflipping)

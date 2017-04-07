@@ -6,16 +6,15 @@ namespace CryptoPals
     {
         protected static byte[] fixedKey, fixedBytes;
 
-        protected static bool runSet(params Func<bool>[] challenges) {
-            bool result = true;
-
+        protected static bool runSet(int offset, params Func<bool>[] challenges) {
             for (int i = 0; i < challenges.Length; i++) {
-                Console.WriteLine($"{(i > 0 ? "\n\n" : "")}Challenge {i + 1}:");
-                result &= challenges[i]();
+                Console.WriteLine($"{(i > 0 ? "\n\n" : "")}Challenge {i + offset}:");
+                if (!challenges[i]())
+                    return false;
                 reset();
             }
 
-            return result;
+            return true;
         }
 
         private static void reset() {

@@ -6,7 +6,7 @@ namespace CryptoPals
     {
         // Members
         public byte[] Source;
-        public double Score;
+        public double Score; // The lower, the better
         public byte[] KeyUsed;
 
         // Properties

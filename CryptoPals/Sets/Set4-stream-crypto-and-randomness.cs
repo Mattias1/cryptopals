@@ -11,14 +11,41 @@ namespace CryptoPals
             return runSet(25, challenge25, challenge26, challenge27, challenge28, challenge29, challenge30 /*, challenge31, challenge32*/);
         }
 
-        // Implement and break HMAC-SHA1 with an artificial timing leak
-        public static bool challenge31() {
-            assertSha1Hmac();
+        // Implement and break HMAC-SHA1 with an artificial timing leak (set cheat=true to bypass the webserver)
+        public static bool challenge31(bool cheat = false) {
+            assertSha1Hmac(cheat);
 
+            string file = "";
+
+            bool foundCorrectHash;
+            byte[] hash = new byte[Sha1.HashSize];
+
+            Console.Write("Hash so far: ");
+            for (int i = 0; i < hash.Length; i++) {
+                ScoreItem[] scoreList = new ScoreItem[5];
+                for (int b = 0; b < 256; b++) {
+                    hash[i] = (byte)b;
+
+                    double time = testHash(file, hash, cheat, out foundCorrectHash);
+                    if (foundCorrectHash) {
+                        Console.WriteLine($"\n\nWe got the hmac: {ConversionHelpers.ToHexString(hash)}");
+                        return true;
+                    }
+
+                    ScoreItem currentItem = new ScoreItem(hash) { KeyUsedInt = b, Score = -time };
+                    currentItem.InsertInScoreList(scoreList);
+                }
+
+                hash[i] = (byte)scoreList[0].KeyUsedInt;
+                Console.Write(ConversionHelpers.ToHexString(new byte[] { hash[i] }));
+                // ScoreItem.DisplayScoreList(scoreList, false);
+            }
+
+            Console.WriteLine($"\n\nNo hmac found for file: {file}");
             return false;
         }
 
-        private static bool assertSha1Hmac() {
+        private static bool assertSha1Hmac(bool cheat) {
             // Make sure the sha1 hmac is implemented correctly
             foreach (var knownHash in Sha1.KnownHmacHashes) {
                 var input = knownHash.Key.Split(';');
@@ -31,7 +58,44 @@ namespace CryptoPals
                     throw new Exception("Sha1 HMAC error");
                 }
             }
+
+            // Make sure the server implements it correctly
+            if (!cheat) {
+                foreach (var knownHash in Sha1.KnownHmacHashes) {
+                    var input = knownHash.Key.Split(';');
+                    bool ok = RequestBuilder.Get($"challenge31/test?file={input[1]}&signature={knownHash.Value}&key={input[0]}").SendBool();
+                    if (!ok) {
+                        Console.WriteLine($"In: '{knownHash.Key}'");
+                        Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
+
+                        throw new Exception("Server doesn't accept our (valid) signature.");
+                    }
+                }
+            }
+
             return true;
+        }
+
+        private static double testHash(string file, byte[] hash, bool cheat, out bool ok) {
+            if (cheat) {
+                byte[] fakeKey = new byte[20];
+                byte[] fileBytes = ConversionHelpers.FromUTF8String(file);
+                byte[] sig = Sha1.Hmac(fakeKey, fileBytes);
+                for (int i = 0; i < sig.Length; i++) {
+                    if (hash[i] != sig[i]) {
+                        ok = false;
+                        return i;
+                    }
+                }
+                ok = true;
+                return 999d;
+            }
+
+            double startTimestamp = MiscHelpers.UnixTimeD();
+            ok = RequestBuilder.Get($"challenge31?file={file}&signature={ConversionHelpers.ToHexString(hash)}").SendBool();
+            double finishTimestamp = MiscHelpers.UnixTimeD();
+
+            return finishTimestamp - startTimestamp;
         }
 
         // Break a MD4-keyed MAC using length extension

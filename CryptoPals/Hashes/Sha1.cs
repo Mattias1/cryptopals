@@ -7,6 +7,7 @@ namespace CryptoPals
     public static class Sha1
     {
         public const int ChunkSize = 64;
+        public const int HashSize = 20;
 
         public static Dictionary<string, string> KnownHashes {
             get {

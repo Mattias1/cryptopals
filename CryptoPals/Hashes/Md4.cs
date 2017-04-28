@@ -6,6 +6,7 @@ namespace CryptoPals
     public static class Md4
     {
         public const int ChunkSize = 64;
+        public const int HashSize = 16;
 
         public static Dictionary<string, string> KnownHashes {
             get {

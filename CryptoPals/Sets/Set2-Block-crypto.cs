@@ -83,7 +83,7 @@ namespace CryptoPals
                 Console.WriteLine("Bad padding");
             }
 
-            if (!checkPKCS7(ConversionHelpers.FromUTF8String("ICE ICE BABY\x01\x02\x03\x04"))) ;
+            if (!checkPKCS7(ConversionHelpers.FromUTF8String("ICE ICE BABY\x01\x02\x03\x04")))
             {
                 exception2 = true;
                 Console.WriteLine("Bad padding");

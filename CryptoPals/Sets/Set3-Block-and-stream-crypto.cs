@@ -314,7 +314,6 @@ namespace CryptoPals
 
         // Implement CTR mode of AES
         public static bool challenge18() {
-            const int blocksize = 16;
             byte[] input = Convert.FromBase64String("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==");
             byte[] key = ConversionHelpers.FromUTF8String("YELLOW SUBMARINE");
             ulong nonce = 0;

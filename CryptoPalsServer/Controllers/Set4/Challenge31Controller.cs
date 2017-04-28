@@ -2,7 +2,7 @@
 using CryptoPals;
 using Microsoft.AspNetCore.Mvc;
 
-namespace WebApplication1.Controllers
+namespace CryptoPalsServer.Controllers
 {
     [Route("[controller]")]
     public class Challenge31Controller : Controller
@@ -16,7 +16,7 @@ namespace WebApplication1.Controllers
             }
 
             byte[] signatureBytes = ConversionHelpers.FromHexString(signature);
-            byte[] hmac = Sha1.Hmac(fixedKey, ConversionHelpers.FromUTF8String(file));
+            byte[] hmac = Sha1.Hmac(fixedKey, ConversionHelpers.FromUTF8String(file ?? ""));
 
             bool result = InsecureCompare(hmac, signatureBytes, 50);
             return result ? Ok() : (StatusCodeResult)BadRequest();
@@ -29,6 +29,15 @@ namespace WebApplication1.Controllers
                     return false;
             }
             return true;
+        }
+
+        [HttpGet("test")]
+        public StatusCodeResult Test(string file, string signature, string key) {
+            byte[] signatureBytes = ConversionHelpers.FromHexString(signature);
+            byte[] hmac = Sha1.Hmac(ConversionHelpers.FromUTF8String(key ?? ""), ConversionHelpers.FromUTF8String(file ?? ""));
+
+            bool result = InsecureCompare(hmac, signatureBytes, 50);
+            return result ? Ok() : (StatusCodeResult)BadRequest();
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CryptoPals
 {
-    class RandomHelpers
+    public static class RandomHelpers
     {
         private static Random random;
         public static Random Random => random ?? (random = new Random());

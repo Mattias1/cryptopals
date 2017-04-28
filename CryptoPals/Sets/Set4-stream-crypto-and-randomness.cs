@@ -13,7 +13,25 @@ namespace CryptoPals
 
         // Implement and break HMAC-SHA1 with an artificial timing leak
         public static bool challenge31() {
+            assertSha1Hmac();
+
             return false;
+        }
+
+        private static bool assertSha1Hmac() {
+            // Make sure the sha1 hmac is implemented correctly
+            foreach (var knownHash in Sha1.KnownHmacHashes) {
+                var input = knownHash.Key.Split(';');
+                string hash = Sha1.Hmac(input[0], input[1]);
+                if (hash != knownHash.Value) {
+                    Console.WriteLine($"In: '{knownHash.Key}'");
+                    Console.WriteLine($"Berekende hash:  {hash}");
+                    Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
+
+                    throw new Exception("Sha1 HMAC error");
+                }
+            }
+            return true;
         }
 
         // Break a MD4-keyed MAC using length extension
@@ -151,16 +169,7 @@ namespace CryptoPals
 
         // Implement SHA-1 MAC
         public static bool challenge28() {
-            // Make sure the sha1 hash is implemented correctly
-            foreach (var knownHash in Sha1.KnownHashes) {
-                string hash = Sha1.Hash(knownHash.Key);
-                if (hash != knownHash.Value) {
-                    Console.WriteLine($"In: '{knownHash.Key}'");
-                    Console.WriteLine($"Berekende hash:  {hash}");
-                    Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
-                    return false;
-                }
-            }
+            assertSha1();
 
             // Test our SHA-1 keyed MAC
             byte[] key = RandomHelpers.RandomByteArray(16);
@@ -179,6 +188,21 @@ namespace CryptoPals
                 return false;
             }
 
+            return true;
+        }
+
+        private static bool assertSha1() {
+            // Make sure the sha1 hash is implemented correctly
+            foreach (var knownHash in Sha1.KnownHashes) {
+                string hash = Sha1.Hash(knownHash.Key);
+                if (hash != knownHash.Value) {
+                    Console.WriteLine($"In: '{knownHash.Key}'");
+                    Console.WriteLine($"Berekende hash:  {hash}");
+                    Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
+
+                    throw new Exception("Sha1 error");
+                }
+            }
             return true;
         }
 

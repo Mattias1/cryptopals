@@ -5,6 +5,13 @@ namespace CryptoPals
 {
     public static class ByteArrayHelpers
     {
+        public static byte[] Create(int length, byte value) {
+            byte[] raw = new byte[length];
+            for (int i = 0; i < length; i++)
+                raw[i] = value;
+            return raw;
+        }
+
         public static byte[] Copy(byte[] raw) {
             byte[] result = new byte[raw.Length];
             Array.Copy(raw, result, raw.Length);

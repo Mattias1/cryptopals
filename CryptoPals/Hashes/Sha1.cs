@@ -19,8 +19,46 @@ namespace CryptoPals
             }
         }
 
+        public static Dictionary<string, string> KnownHmacHashes {
+            get {
+                // { "key;message" , "expected SHA1-HMAC" }
+                return new Dictionary<string, string> {
+                    {";", "fbdb1d1b18aa6c08324b7d64b71fb76370690e1d"},
+                    {"key;The quick brown fox jumps over the lazy dog", "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"}
+                };
+            }
+        }
+
         public static byte[] Mac(byte[] key, byte[] message) {
             return Hash(ByteArrayHelpers.Concatenate(key, message));
+        }
+
+        public static string Hmac(string key, string message) {
+            byte[] hash = Hmac(ConversionHelpers.FromUTF8String(key), ConversionHelpers.FromUTF8String(message));
+            return ConversionHelpers.ToHexString(hash, false);
+        }
+        public static byte[] Hmac(byte[] key, byte[] message) {
+            byte[] opad = ByteArrayHelpers.Create(ChunkSize, 0x5c);
+            byte[] ipad = ByteArrayHelpers.Create(ChunkSize, 0x36);
+            byte[] derivedKey = DeriveHmacKey(key);
+
+            return Hash(ByteArrayHelpers.Concatenate(
+                ByteArrayHelpers.XOR(derivedKey, opad),
+                Hash(ByteArrayHelpers.Concatenate(
+                    ByteArrayHelpers.XOR(derivedKey, ipad),
+                    message
+                ))
+            ));
+        }
+
+        private static byte[] DeriveHmacKey(byte[] key) {
+            if (key.Length == ChunkSize) {
+                return key;
+            }
+            if (key.Length < ChunkSize) {
+                return ByteArrayHelpers.ForcePadWith(key, ChunkSize, 0);
+            }
+            return Hash(key);
         }
 
         public static string Hash(string message) {

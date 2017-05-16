@@ -8,37 +8,57 @@ namespace CryptoPals
     {
         // Run all challenges of set 4
         public static bool runSet4() {
-            return runSet(25, challenge25, challenge26, challenge27, challenge28, challenge29, challenge30 /*, challenge31, challenge32*/);
+            return runSet(25, challenge25, challenge26, challenge27, challenge28, challenge29, challenge30, () => challenge31(true, false)/*, () => challenge32(true) */);
         }
 
-        // Implement and break HMAC-SHA1 with an artificial timing leak (set cheat=true to bypass the webserver)
-        public static bool challenge31(bool cheat = false) {
-            assertSha1Hmac(cheat);
 
-            string file = "";
+        // Implement and break HMAC-SHA1 with an artificial timing leak (set cheat=true to bypass the webserver)
+        public static bool challenge31(bool cheatFakeServer = false, bool debugOutput = false, int delay = 50) {
+            assertSha1Hmac(cheatFakeServer);
 
             bool foundCorrectHash;
+            string file = "";
             byte[] hash = new byte[Sha1.HashSize];
 
-            Console.Write("Hash so far: ");
-            for (int i = 0; i < hash.Length; i++) {
-                ScoreItem[] scoreList = new ScoreItem[5];
-                for (int b = 0; b < 256; b++) {
-                    hash[i] = (byte)b;
+            if (!debugOutput) {
+                Console.Write("Hash so far: ");
+            }
 
-                    double time = testHash(file, hash, cheat, out foundCorrectHash);
-                    if (foundCorrectHash) {
-                        Console.WriteLine($"\n\nWe got the hmac: {ConversionHelpers.ToHexString(hash)}");
-                        return true;
+            for (int i = 0; i < hash.Length; i++) {
+                // Gather timing data
+                var timingData = new TimingData(1);
+                for (int t = 0; t < timingData.NrOfTriesPerByte; t++) {
+                    for (int b = 0; b < 256; b++) {
+                        hash[i] = (byte)b;
+                        double time = testHash(file, hash, cheatFakeServer, i, delay, out foundCorrectHash);
+                        timingData.AddData(b, t, time);
+
+                        if (foundCorrectHash) {
+                            Console.WriteLine($"\n\nWe got the hmac: {ConversionHelpers.ToHexString(hash)}");
+                            return true;
+                        }
                     }
+                }
+
+                // Process timing data
+                ScoreItem[] scoreList = new ScoreItem[debugOutput ? 256 : 1];
+                for (int b = 0; b < 256; b++) {
+                    double time = timingData.AverageTime(b, 0);
 
                     ScoreItem currentItem = new ScoreItem(hash) { KeyUsedInt = b, Score = -time };
                     currentItem.InsertInScoreList(scoreList);
                 }
 
+                // Select the best option and continue
                 hash[i] = (byte)scoreList[0].KeyUsedInt;
-                Console.Write(ConversionHelpers.ToHexString(new byte[] { hash[i] }));
-                // ScoreItem.DisplayScoreList(scoreList, false);
+
+                if (!debugOutput) {
+                    Console.Write(ConversionHelpers.ToHexString(new byte[] { hash[i] }));
+                }
+                else {
+                    ScoreItem.DisplayScoreList(scoreList, false);
+                    ConversionHelpers.PrintHexString("Hash:    ", hash, true, 4);
+                }
             }
 
             Console.WriteLine($"\n\nNo hmac found for file: {file}");
@@ -76,7 +96,7 @@ namespace CryptoPals
             return true;
         }
 
-        private static double testHash(string file, byte[] hash, bool cheat, out bool ok) {
+        private static double testHash(string file, byte[] hash, bool cheat, int nrRight, int delay, out bool ok) {
             if (cheat) {
                 byte[] fakeKey = new byte[20];
                 byte[] fileBytes = ConversionHelpers.FromUTF8String(file);
@@ -91,8 +111,10 @@ namespace CryptoPals
                 return 999d;
             }
 
+            string hashHex = ConversionHelpers.ToHexString(hash);
+
             double startTimestamp = MiscHelpers.UnixTimeD();
-            ok = RequestBuilder.Get($"challenge31?file={file}&signature={ConversionHelpers.ToHexString(hash)}").SendBool();
+            ok = RequestBuilder.Get($"challenge31?file={file}&signature={hashHex}&nrRight={nrRight}&delay={delay}").SendBool();
             double finishTimestamp = MiscHelpers.UnixTimeD();
 
             return finishTimestamp - startTimestamp;

@@ -50,10 +50,16 @@ namespace CryptoPals
         }
 
         private string InterpretResponse(Task<HttpResponseMessage> response) {
-            var responseContent = response.Result.Content.ReadAsStringAsync().Result;
+            try {
+                var responseContent = response.Result.Content.ReadAsStringAsync().Result;
 
-            if (response.Result.IsSuccessStatusCode) {
-                return responseContent;
+                if (response.Result.IsSuccessStatusCode) {
+                    return responseContent;
+                }
+            }
+            catch (Exception e) {
+                Console.WriteLine("Exception in request builder response: " + e.Message);
+                return null;
             }
             return null;
         }

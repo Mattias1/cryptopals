@@ -32,15 +32,16 @@ namespace CryptoPals
             return result;
         }
 
-        public static string ToHexString(byte[] raw, bool add0x = false) {
+        public static string ToHexString(byte[] raw, bool add0x = false, int spaceEvery = 0) {
             // Initialize
-            char[] result = new char[raw.Length * 2];
+            char[] result = new char[raw.Length * 2 + (spaceEvery == 0 ? 0 : raw.Length / spaceEvery)];
             const string hex = "0123456789abcdef";
 
             // Fill the char array
             for (int i = 0; i < raw.Length; i++) {
-                result[i * 2] = hex[raw[i] >> 4];
-                result[i * 2 + 1] = hex[raw[i] & 0x0f];
+                int offset = spaceEvery == 0 ? 0 : (i / spaceEvery);
+                result[offset + i * 2] = hex[raw[i] >> 4];
+                result[offset + i * 2 + 1] = hex[raw[i] & 0x0f];
             }
 
             // Convert to string in one pass (and optionally add the "0x" in front)
@@ -93,15 +94,15 @@ namespace CryptoPals
             Console.WriteLine(prefix + ToUTF8String(raw));
         }
 
-        public static void PrintHexString(byte[] raw, bool add0x = true) {
-            Console.WriteLine(ToHexString(raw, add0x));
+        public static void PrintHexString(byte[] raw, bool add0x = true, int spaceEvery = 0) {
+            Console.WriteLine(ToHexString(raw, add0x, spaceEvery));
         }
         public static void PrintHexString(uint[] raw, bool add0x = true) {
             Console.WriteLine(ToHexString(raw, add0x));
         }
 
-        public static void PrintHexString(string prefix, byte[] raw, bool add0x = true) {
-            Console.WriteLine(prefix + ToHexString(raw, add0x));
+        public static void PrintHexString(string prefix, byte[] raw, bool add0x = true, int spaceEvery = 0) {
+            Console.WriteLine(prefix + ToHexString(raw, add0x, spaceEvery));
         }
         public static void PrintHexString(string prefix, uint[] raw, bool add0x = true) {
             Console.WriteLine(prefix + ToHexString(raw, add0x));

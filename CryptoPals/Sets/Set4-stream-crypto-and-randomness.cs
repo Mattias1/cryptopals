@@ -11,9 +11,22 @@ namespace CryptoPals
             return runSet(25, challenge25, challenge26, challenge27, challenge28, challenge29, challenge30, () => challenge31(true, false)/*, () => challenge32(true) */);
         }
 
+        // Implement and break HMAC-SHA1 with a slightly less artificial timing leak (set cheat=true to bypass the webserver)
+        public static bool challenge32(bool cheatFakeServer = false) {
+            return challenge31(cheatFakeServer, false, 5, 25, 3);
+        }
 
         // Implement and break HMAC-SHA1 with an artificial timing leak (set cheat=true to bypass the webserver)
-        public static bool challenge31(bool cheatFakeServer = false, bool debugOutput = false, int delay = 50) {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cheatFakeServer">Replace the server by a dummy that returns no time but the index of the error</param>
+        /// <param name="debugOutput">Show debug output</param>
+        /// <param name="delay">The delay in the mac check on the server (ms)</param>
+        /// <param name="tries">The number of tries for the same hash. The average of all tries is used for the final time.</param>
+        /// <param name="skip">The number of tries that need to be skipped /// (it will skip the tries with the largest time - in case the server is really slow for a little while, then those are the ones we want to miss)</param>
+        /// <returns></returns>
+        public static bool challenge31(bool cheatFakeServer = false, bool debugOutput = false, int delay = 50, int tries = 3, int skip = 0) {
             assertSha1Hmac(cheatFakeServer);
 
             bool foundCorrectHash;
@@ -26,7 +39,7 @@ namespace CryptoPals
 
             for (int i = 0; i < hash.Length; i++) {
                 // Gather timing data
-                var timingData = new TimingData(1);
+                var timingData = new TimingData(tries);
                 for (int t = 0; t < timingData.NrOfTriesPerByte; t++) {
                     for (int b = 0; b < 256; b++) {
                         hash[i] = (byte)b;
@@ -43,7 +56,7 @@ namespace CryptoPals
                 // Process timing data
                 ScoreItem[] scoreList = new ScoreItem[debugOutput ? 256 : 1];
                 for (int b = 0; b < 256; b++) {
-                    double time = timingData.AverageTime(b, 0);
+                    double time = timingData.AverageTime(b, skip);
 
                     ScoreItem currentItem = new ScoreItem(hash) { KeyUsedInt = b, Score = -time };
                     currentItem.InsertInScoreList(scoreList);
@@ -88,7 +101,7 @@ namespace CryptoPals
                         Console.WriteLine($"In: '{knownHash.Key}'");
                         Console.WriteLine($"Verwachtte hash: {knownHash.Value}\n");
 
-                        throw new Exception("Server doesn't accept our (valid) signature.");
+                        throw new Exception("Server doesn't accept our (valid) signature."); // This may also mean that the server simply doesn't run :)
                     }
                 }
             }

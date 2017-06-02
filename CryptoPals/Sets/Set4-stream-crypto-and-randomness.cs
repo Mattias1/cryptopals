@@ -8,7 +8,7 @@ namespace CryptoPals
     {
         // Run all challenges of set 4
         public static bool runSet4() {
-            return runSet(25, challenge25, challenge26, challenge27, challenge28, challenge29, challenge30, () => challenge31(true, false)/*, () => challenge32(true) */);
+            return runSet(25, challenge25, challenge26, challenge27, challenge28, challenge29, challenge30, () => challenge31(true), () => challenge32(true));
         }
 
         // Implement and break HMAC-SHA1 with a slightly less artificial timing leak (set cheat=true to bypass the webserver)

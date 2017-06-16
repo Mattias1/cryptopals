@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "CryptoPals", "CryptoPals\CryptoPals.xproj", "{3ADA80DE-1BDC-4ED4-96F2-EEC38A0EF5D1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoPals", "CryptoPals\CryptoPals.csproj", "{3ADA80DE-1BDC-4ED4-96F2-EEC38A0EF5D1}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "CryptoPalsServer", "CryptoPalsServer\CryptoPalsServer.xproj", "{ABB7097E-2B31-4675-82DA-2790A5DFAFA4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptoPalsServer", "CryptoPalsServer\CryptoPalsServer.csproj", "{ABB7097E-2B31-4675-82DA-2790A5DFAFA4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

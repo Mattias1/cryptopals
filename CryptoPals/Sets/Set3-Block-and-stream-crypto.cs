@@ -321,8 +321,8 @@ namespace CryptoPals
             byte[] result = encryptOrDecryptAesCtr(input, key, nonce);
             byte[] backToInput = encryptOrDecryptAesCtr(result, key, nonce);
 
-            string test = ConversionHelpers.ToUTF8String(Set2.unPKCS7(result));
-            ConversionHelpers.PrintUTF8String(Set2.unPKCS7(result));
+            string test = ConversionHelpers.ToUTF8String(BlockCipher.UnPKCS7(result));
+            ConversionHelpers.PrintUTF8String(BlockCipher.UnPKCS7(result));
 
             return MiscHelpers.QuickCheck(result, input.Length, "Yo, VIP Let's kick it Ice, Ice, baby Ice, Ice, baby")
                 && MiscHelpers.Equals(input, backToInput);
@@ -410,7 +410,7 @@ namespace CryptoPals
             Console.Write("Answer hex:   ");
             ConversionHelpers.PrintHexString(answer);
             Console.Write("Answer UTF-8: ");
-            ConversionHelpers.PrintUTF8String(Set2.unPKCS7(answer));
+            ConversionHelpers.PrintUTF8String(BlockCipher.UnPKCS7(answer));
 
             return MiscHelpers.Equals(Convert.FromBase64String("MDAw"), ByteArrayHelpers.CopyPartOf(answer, 0, 3));
         }
@@ -447,7 +447,7 @@ namespace CryptoPals
         static bool paddingOracle17(byte[] cipher, byte[] iv) {
             // Return true or false depending on whether or not the padding is correct
             byte[] plain = BlockCipher.DecryptAES(cipher, fixedKey, iv, CipherMode.CBC, PaddingMode.None);
-            return Set2.checkPKCS7(plain);
+            return BlockCipher.CheckPKCS7(plain);
         }
     }
 }

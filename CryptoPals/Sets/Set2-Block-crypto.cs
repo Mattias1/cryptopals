@@ -59,7 +59,7 @@ namespace CryptoPals
 
             // Decrypt the cookie
             byte[] original = BlockCipher.DecryptAES(cipher, fixedKey, new byte[blocksize], CipherMode.CBC, PaddingMode.None);
-            byte[] plain = unPKCS7(original);
+            byte[] plain = BlockCipher.UnPKCS7(original);
 
             // Check for admin rights
             string url = ConversionHelpers.ToUTF8String(plain);
@@ -75,15 +75,15 @@ namespace CryptoPals
             // Answer: "ICE ICE BABY", exception, exception
             bool exception1 = false, exception2 = false;
 
-            string result = ConversionHelpers.ToUTF8String(unPKCS7(ConversionHelpers.FromUTF8String("ICE ICE BABY\x04\x04\x04\x04")));
+            string result = ConversionHelpers.ToUTF8String(BlockCipher.UnPKCS7(ConversionHelpers.FromUTF8String("ICE ICE BABY\x04\x04\x04\x04")));
             Console.WriteLine(result);
 
-            if (!checkPKCS7(ConversionHelpers.FromUTF8String("ICE ICE BABY\x05\x05\x05\x05"))) {
+            if (!BlockCipher.CheckPKCS7(ConversionHelpers.FromUTF8String("ICE ICE BABY\x05\x05\x05\x05"))) {
                 exception1 = true;
                 Console.WriteLine("Bad padding");
             }
 
-            if (!checkPKCS7(ConversionHelpers.FromUTF8String("ICE ICE BABY\x01\x02\x03\x04")))
+            if (!BlockCipher.CheckPKCS7(ConversionHelpers.FromUTF8String("ICE ICE BABY\x01\x02\x03\x04")))
             {
                 exception2 = true;
                 Console.WriteLine("Bad padding");
@@ -208,7 +208,7 @@ namespace CryptoPals
             // First try
             const int blocksize = 16;
             byte[] before = ConversionHelpers.FromUTF8String("AAAAAAAAAA");
-            byte[] adminWord = PKCS7(ConversionHelpers.FromUTF8String("admin"), blocksize);
+            byte[] adminWord = BlockCipher.PKCS7(ConversionHelpers.FromUTF8String("admin"), blocksize);
             byte[] after = ConversionHelpers.FromUTF8String("@gmail.com");
             byte[] input = ByteArrayHelpers.Concatenate(before, adminWord, after);
             byte[] cipher = encryptionOracle13(input);
@@ -392,7 +392,7 @@ namespace CryptoPals
 
             byte[] result = decryptAesCbc(input, iv, key);
             byte[] backToInput = encryptAesCbc(result, key, iv).Cipher;
-            ConversionHelpers.PrintUTF8String(unPKCS7(result));
+            ConversionHelpers.PrintUTF8String(BlockCipher.UnPKCS7(result));
 
             // How original, the content is the same as for challenge 7 and 6
             return MiscHelpers.QuickCheck(result, 2880, "I'm back and I'm ringin' the bell")
@@ -444,39 +444,11 @@ namespace CryptoPals
             byte[] input = ConversionHelpers.FromUTF8String("YELLOW SUBMARINE");
             byte blocksize = 20;
 
-            byte[] padded = PKCS7(input, blocksize);
+            byte[] padded = BlockCipher.PKCS7(input, blocksize);
             string result = ConversionHelpers.ToUTF8String(padded);
             Console.WriteLine(result);
 
             return result == "YELLOW SUBMARINE\x04\x04\x04\x04";
-        }
-
-        public static byte[] PKCS7(byte[] raw, int blocksize = 16) {
-            // Add PKCS#7 padding
-            return ByteArrayHelpers.ForcePadWith(raw, blocksize, (byte)(blocksize - raw.Length % blocksize));
-        }
-        public static byte[] unPKCS7(byte[] raw) {
-            // Remove PKCS#7 padding. Note that the .NET AES doesn't really unpad, it just replaces them with zeroes.
-            int paddingLength = getPKCS7(raw);
-            return ByteArrayHelpers.CopyPartOf(raw, 0, raw.Length - paddingLength);
-        }
-        public static byte[] zeroPKCS7(byte[] raw) {
-            // Remove PKCS#7 padding. This time, overwrite the padding with zeroes, just like the .NET AES.
-            int paddingLength = getPKCS7(raw);
-            byte[] result = new byte[raw.Length];
-            Array.Copy(raw, 0, result, 0, raw.Length - paddingLength);
-            return result;
-        }
-        public static int getPKCS7(byte[] raw) {
-            // Check whether or not the raw array is a properly PKCS7-padded. Return -1 when not valid.
-            int paddingLength = raw.Last();
-            for (int i = 0; i < paddingLength; i++)
-                if (raw[raw.Length - i - 1] != paddingLength)
-                    return -1;
-            return paddingLength;
-        }
-        public static bool checkPKCS7(byte[] raw) {
-            return getPKCS7(raw) > 0;
         }
     }
 }

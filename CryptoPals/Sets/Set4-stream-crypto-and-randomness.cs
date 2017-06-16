@@ -347,7 +347,7 @@ namespace CryptoPals
 
         static bool decryptionOracle27(byte[] cipher) {
             byte[] original = BlockCipher.DecryptAES(cipher, fixedKey, fixedKey, CipherMode.CBC, PaddingMode.None);
-            byte[] plain = Set2.unPKCS7(original);
+            byte[] plain = BlockCipher.UnPKCS7(original);
 
             // If the plain contains high ascii values, return exception with the (decrypted) plaintext
             if (plain.Any(b => b > (int)'z' + 20))

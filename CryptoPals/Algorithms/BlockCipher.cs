@@ -29,18 +29,17 @@ namespace CryptoPals
 
         public static byte[] DecryptAES(byte[] input, byte[] key, byte[] iv, CipherMode mode, PaddingMode paddingMode) {
             byte[] result;
-            int decryptedByteCount = 0;
 
             using (var cipher = Aes.Create()) {
                 cipher.Mode = mode;
-                cipher.Padding = paddingMode;
+                cipher.Padding = paddingMode == PaddingMode.PKCS7 ? PaddingMode.None : paddingMode;
 
                 try {
                     using (ICryptoTransform decryptor = cipher.CreateDecryptor(key, iv)) {
                         using (MemoryStream from = new MemoryStream(input)) {
                             using (CryptoStream reader = new CryptoStream(from, decryptor, CryptoStreamMode.Read)) {
                                 result = new byte[input.Length];
-                                decryptedByteCount = reader.Read(result, 0, result.Length);
+                                reader.Read(result, 0, result.Length);
                             }
                         }
                     }
@@ -48,6 +47,9 @@ namespace CryptoPals
                 catch (Exception ex) {
                     throw ex;
                 }
+            }
+            if (paddingMode == PaddingMode.PKCS7) {
+                return UnPKCS7(result);
             }
             return result;
         }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 
 namespace CryptoPals
@@ -66,6 +67,13 @@ namespace CryptoPals
                 result[i] = (raw & (1u << size - i - 1)) != 0 ? '1' : '0';
 
             return (add0b ? "0b" : "") + new string(result);
+        }
+
+        public static BigInteger ToBigInt(byte[] bytes) {
+            if (bytes.Last() > 0x7f) {
+                return new BigInteger(ByteArrayHelpers.Concatenate(bytes, new byte[1]));
+            }
+            return new BigInteger(bytes);
         }
 
         public static byte[] FromUTF8String(string message) {

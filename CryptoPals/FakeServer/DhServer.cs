@@ -43,6 +43,37 @@ namespace CryptoPals
             _serverInfoDict.Add(request.From.Id, new ServerInfo(request.From.Id, DiffieHelman.P, DiffieHelman.G, request.PublicKey));
         }
 
+        // Setup connection with negotiated groups
+        public virtual DhNegotiation InitiateDhNegotiation(DhServer receiver) {
+            var randomPrime = DiffieHelman.P; // Much unexpected. Such random. Wow.
+            return new DhNegotiation(this, receiver, randomPrime, DiffieHelman.G);
+        }
+
+        public virtual DhNegotiation ReceiveDhNegotiationRequest(DhNegotiation request) {
+            _serverInfoDict.Add(request.From.Id, new ServerInfo(request.From.Id, request.P, request.G, null));
+            return new DhNegotiation(this, request.From, request.P, request.G);
+        }
+
+        public virtual DhInitiationResponse ReceiveDhNegotiationResponse(DhNegotiation request) {
+            _keyPair = DiffieHelman.GenerateKeypair(request.P, request.G);
+            _serverInfoDict.Add(request.From.Id, new ServerInfo(request.From.Id, DiffieHelman.P, DiffieHelman.G, null));
+            return new DhInitiationResponse(this, request.From, _keyPair.PublicKey);
+        }
+
+        public virtual DhInitiationResponse ReceiveDhNegotiatedPublicKey(DhInitiationResponse request) {
+            var info = _serverInfoDict[request.From.Id];
+            info.PublicKey = request.PublicKey;
+            _serverInfoDict[request.From.Id] = info;
+            _keyPair = DiffieHelman.GenerateKeypair(info.P, info.G);
+            return new DhInitiationResponse(this, request.From, _keyPair.PublicKey);
+        }
+
+        public virtual void ReceiveDhFinalNegotiatedPublicKey(DhInitiationResponse request) {
+            var info = _serverInfoDict[request.From.Id];
+            info.PublicKey = request.PublicKey;
+            _serverInfoDict[request.From.Id] = info;
+        }
+
         // Send messages
         public virtual DhMessage SendTextMessage(DhServer receiver, string message) {
             return SendMessage(receiver, ConversionHelpers.FromUTF8String(message));
@@ -110,6 +141,24 @@ namespace CryptoPals
             From = from;
             To = to;
             PublicKey = publicKey;
+        }
+    }
+
+    public struct DhNegotiation
+    {
+        public DhServer From, To;
+        public byte[] P, G;
+
+        public DhNegotiation(DhServer from, DhServer to, byte[] p, byte[] g) {
+            From = from;
+            To = to;
+            P = p;
+            G = g;
+        }
+
+        public void Deconstruct(out byte[] p, out byte[] g) {
+            p = P;
+            g = G;
         }
     }
 

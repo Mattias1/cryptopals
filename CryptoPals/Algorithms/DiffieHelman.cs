@@ -30,8 +30,8 @@ namespace CryptoPals
         }
 
         private static byte[] RandomModP(byte[] p) {
-            var bigP = toBigInt(p);
-            BigInteger bigRandom = toBigInt(RandomHelpers.RandomByteArray(p.Length));
+            var bigP = ConversionHelpers.ToBigInt(p);
+            BigInteger bigRandom = ConversionHelpers.ToBigInt(RandomHelpers.RandomByteArray(p.Length));
             bigRandom = bigRandom % bigP;
             return bigRandom.ToByteArray();
         }
@@ -52,9 +52,9 @@ namespace CryptoPals
         }
 
         public static byte[] ModExp(byte[] base_, byte[] exponent, byte[] mod) {
-            var b = toBigInt(base_);
-            var e = toBigInt(exponent);
-            var m = toBigInt(mod);
+            var b = ConversionHelpers.ToBigInt(base_);
+            var e = ConversionHelpers.ToBigInt(exponent);
+            var m = ConversionHelpers.ToBigInt(mod);
 
             return ModExp(b, e, m).ToByteArray();
         }
@@ -66,13 +66,6 @@ namespace CryptoPals
 
             BigInteger square = ModExp(b * b % m, e / 2, m);
             return e.IsEven ? square : square * b % m;
-        }
-
-        private static BigInteger toBigInt(byte[] bytes) {
-            if (bytes.Last() > 0x7f) {
-                return new BigInteger(ByteArrayHelpers.Concatenate(bytes, new byte[1]));
-            }
-            return new BigInteger(bytes);
         }
     }
 

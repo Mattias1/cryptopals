@@ -1,23 +1,17 @@
-﻿using System.IO;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
 namespace CryptoPalsServer
 {
     public class Program
     {
-        public static void Main(string[] args) {
-            var host = new WebHostBuilder()
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseIISIntegration()
-                .UseStartup<Startup>();
+        public static void Main(string[] args) => CreateHostBuilder(args).Build().Run();
 
-#if !DEBUG
-            host.UseUrls("http://localhost:9000");
-#endif
-
-            host.Build().Run();
+        public static IHostBuilder CreateHostBuilder(string[] args) {
+            return Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder => {
+                    webBuilder.UseStartup<Startup>();
+                });
         }
     }
 }

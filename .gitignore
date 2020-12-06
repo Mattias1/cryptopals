@@ -185,3 +185,4 @@ website/
 *.lnk
 *.swp
 */project.lock.json
+.vs/

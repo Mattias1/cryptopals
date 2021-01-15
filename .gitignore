@@ -186,3 +186,4 @@ website/
 *.swp
 */project.lock.json
 .vs/
+.vscode/
